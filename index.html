@@ -24,7 +24,8 @@
         radial-gradient(900px 480px at 85% -10%, var(--bg-g1), transparent 60%),
         radial-gradient(860px 520px at -10% 110%, var(--bg-g2), transparent 60%);
     }
-    body::before{content:""; position:fixed; inset:0; pointer-events:none; opacity:.08;
+    body::before{
+      content:""; position:fixed; inset:0; pointer-events:none; opacity:.08;
       background-image: linear-gradient(to right, #0f1730 1px, transparent 1px),
                         linear-gradient(to bottom, #0f1730 1px, transparent 1px);
       background-size: 28px 28px;
@@ -51,14 +52,14 @@
     h2{margin:0 0 10px}
     p.desc{color:var(--muted);margin:0 0 16px}
 
-    /* Control bar pinned to the left with fixed columns so Period doesn't drift right */
+    /* Option A: fixed two-column grid, left-pinned */
     .control-bar{
       display:grid;
       gap:24px;
       margin:12px 0 0;
-      grid-template-columns: 560px 360px;  /* filename col, period col */
+      grid-template-columns: 520px 320px; /* filename col | period col */
       align-items:start;
-      width:max-content;                    /* shrink-to-fit so both blocks sit left */
+      width:max-content;                  /* keeps both blocks snug-left */
     }
     .field{display:flex; flex-direction:column}
     .label{font-weight:750; font-size:.96rem; margin-bottom:6px; white-space:nowrap;}
@@ -82,14 +83,13 @@
     .group input::placeholder{color:#7b89a5}
     .group:focus-within{ box-shadow:0 0 0 3px rgba(53,182,255,.2), var(--inset); border-color:rgba(53,182,255,.4); }
 
-    /* Filename ~2/3 of its column width (as requested) */
-    .filename .group{ width:66.666%; min-width:320px; }
-
-    /* Keep spinner size; give its column extra width so its helper can be wider */
+    /* Filename ~2/3 of its column */
+    .filename .group{ width: clamp(320px, 66%, 360px); }
+    /* Period spinner size; helper gets full column width (320px) */
     .period   .group{ width:220px; }
 
     .helper{ color:var(--muted); margin-top:8px; line-height:1.6; }
-    .period .helper{ width:100%; max-width:none; } /* Why: allow full 360px column width */
+    .period .helper{ width:100%; max-width:none; }
 
     /* Table */
     .table-wrap{overflow:auto; border:1px solid var(--line); border-radius:12px; background:var(--surface-2); margin-top:10px}
@@ -97,7 +97,9 @@
     th,td{padding:11px 12px; border-bottom:1px solid var(--line)}
     th{background:linear-gradient(180deg, rgba(0,94,184,.20), rgba(0,94,184,.07)); text-align:left; color:#d9e9ff; position:sticky; top:0}
     tbody tr:hover{background:rgba(53,182,255,.06)}
-    tbody td input{width:100%; background:transparent; border:1px solid transparent; border-radius:8px; padding:8px 10px; color:var(--ink);}
+    tbody td input{
+      width:100%; background:transparent; border:1px solid transparent; border-radius:8px; padding:8px 10px; color:var(--ink);
+    }
     tbody td input:focus{ border-color:rgba(53,182,255,.4); background:rgba(53,182,255,.08); outline:none; }
 
     .controls{display:flex; gap:10px; flex-wrap:wrap; margin-top:14px}
@@ -119,6 +121,13 @@
       overflow:auto; max-height:52vh; box-shadow: var(--inset);
     }
     .pill{display:inline-block;background:rgba(53,182,255,.14); color:#cfe3ff; padding:2px 8px; border-radius:999px; font-size:.85rem}
+
+    /* Mobile fallback for sanity */
+    @media (max-width: 920px){
+      .control-bar{ grid-template-columns: 1fr; width:100%; }
+      .filename .group{ width:100%; }
+      .period .group{ width:260px; }
+    }
   </style>
 </head>
 <body>
@@ -132,8 +141,9 @@
       <h2>Configuration</h2>
       <p class="desc">Set filename and coupling period, map Targets ↔ Wells, then generate your <span class="pill">.ixf</span> file.</p>
 
-      <!-- Left-pinned control bar (560px + 360px) -->
+      <!-- Option A control bar -->
       <div class="control-bar">
+        <!-- Filename -->
         <div class="field filename">
           <div class="label">Output filename</div>
           <div class="group">
@@ -147,10 +157,11 @@
             <div class="suffix">.ixf</div>
           </div>
           <div id="filenameHelp" class="helper">
-            Used as <strong>filename.ixf</strong> on download.
+            Used as <strong>filename.ixf</strong> on download. Letters, numbers, dashes, underscores only.
           </div>
         </div>
 
+        <!-- Coupling Period -->
         <div class="field period">
           <div class="label">Coupling Period (Days)</div>
           <div class="group">
@@ -168,6 +179,7 @@
         </div>
       </div>
 
+      <!-- Mapping table -->
       <div class="field" style="margin-top:16px;">
         <div class="label">Boundary Nodes Map</div>
         <p class="helper">
@@ -192,11 +204,13 @@
         </div>
       </div>
 
+      <!-- Actions -->
       <div class="controls" style="margin-top:16px">
-        <button id="previewBtn" type="button">Preview</button>
+        <button id="previewToggleBtn" type="button">Preview</button>
         <button id="generateBtn" type="button" class="primary">Generate .ixf</button>
       </div>
 
+      <!-- Preview -->
       <div id="previewCard" style="display:none; margin-top:12px;">
         <div class="label" style="margin-bottom:6px">Preview</div>
         <pre class="preview" id="previewBox"></pre>
@@ -205,8 +219,8 @@
   </main>
 
   <script>
-    // Why: ensure safe filenames and proper quoting in IXF.
-    function sanitizeFilename(name){ const trimmed=String(name).trim(); const safe=trimmed.replace(/[^A-Za-z0-9._-]/g,"_"); return safe || "network_config"; }
+    // Why: ensure safe filenames and quoting in IXF.
+    function sanitizeFilename(name){ const t=String(name).trim(); const s=t.replace(/[^A-Za-z0-9._-]/g,"_"); return s || "network_config"; }
     function escapeQuoted(str){ return String(str).replace(/\\/g,"\\\\").replace(/"/g,'\\"'); }
 
     function addRow(target="", well=""){
@@ -317,17 +331,32 @@
       document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
     }
 
-    document.getElementById("addRowBtn").addEventListener("click",()=>addRow());
-    document.getElementById("clearRowsBtn").addEventListener("click",()=>{ document.getElementById("mapBody").innerHTML=""; });
-    document.getElementById("generateBtn").addEventListener("click",()=>{
-      try{ const {filename,content}=buildIXF(); downloadIXF(filename,content); }catch(err){ alert(err.message); }
-    });
-    document.getElementById("previewBtn").addEventListener("click",()=>{
-      const previewCard=document.getElementById("previewCard");
-      const previewBox=document.getElementById("previewBox");
-      try{ const {content}=buildIXF(); previewBox.textContent=content; previewCard.style.display="block"; previewCard.scrollIntoView({behavior:"smooth",block:"start"}); }catch(err){ alert(err.message); }
+    // Preview toggle (Why: quick peek without clutter)
+    const previewCard=document.getElementById("previewCard");
+    const previewBox=document.getElementById("previewBox");
+    const previewToggleBtn=document.getElementById("previewToggleBtn");
+
+    function setPreview(visible){
+      previewCard.style.display = visible ? "block" : "none";
+      previewToggleBtn.textContent = visible ? "Hide Preview" : "Preview";
+      if (visible){
+        const {content}=buildIXF();
+        previewBox.textContent=content;
+        previewCard.scrollIntoView({behavior:"smooth",block:"start"});
+      }
+    }
+    let previewVisible=false;
+    previewToggleBtn.addEventListener("click", ()=>{ previewVisible=!previewVisible; setPreview(previewVisible); });
+
+    // Actions
+    document.getElementById("addRowBtn").addEventListener("click", ()=> addRow());
+    document.getElementById("clearRowsBtn").addEventListener("click", ()=>{ document.getElementById("mapBody").innerHTML=""; });
+    document.getElementById("generateBtn").addEventListener("click", ()=>{
+      try{ const {filename,content}=buildIXF(); downloadIXF(filename,content); }
+      catch(err){ alert(err.message); }
     });
 
+    // Seed demo rows
     [["Well1","P1"],["Well2","P2"],["Well3","P3"]].forEach(([t,w])=>addRow(t,w));
   </script>
 </body>
