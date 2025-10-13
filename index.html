@@ -11,11 +11,11 @@
       --brand:#005EB8; --brand-600:#005EB8; --brand-700:#084a8e;
       --radius:14px; --gap:16px; --control-h:44px;
       --shadow:0 10px 26px rgba(0,0,0,.22);
-      --inset: inset 0 0 0 1px rgba(255,255,255,.03);
+      --inset: inset 0 0 0 1px rgba(0,0,0,.03);
       --grid-size:28px;
     }
 
-    /* ---------- DARK THEME (default) ---------- */
+    /* ---------- DARK THEME (base) ---------- */
     :root{
       --ink:#e9eef8; --muted:#a9b6cf;
       --bg:#0e1424; --bg-g1: rgba(53,182,255,.08); --bg-g2: rgba(0,94,184,.10);
@@ -30,6 +30,7 @@
       --btn-bg-hover: rgba(255,255,255,.09);
       --toggle-track:#16243c; --toggle-thumb:#ffffff;
       --toggle-icon:#cfe3ff;
+      --th-fg:#d9e9ff;
     }
 
     /* ---------- LIGHT THEME OVERRIDES ---------- */
@@ -43,12 +44,11 @@
       --hover-row:#f3f8ff;
       --pill-bg:#eaf3ff;
       --preview-bg:#ffffff; --preview-fg:#1f2937;
-      --btn-bg:#ffffff;
-      --btn-bg-hover:#f1f5fb;
-      --toggle-track:#e8eef8; --toggle-thumb:#ffffff;
-      --toggle-icon:#1f3d77;
+      --btn-bg:#ffffff; --btn-bg-hover:#f1f5fb;
+      --toggle-track:#e8eef8; --toggle-thumb:#ffffff; --toggle-icon:#1f3d77;
       --shadow:0 8px 20px rgba(15, 23, 42, .08);
       --inset: inset 0 0 0 1px rgba(0,0,0,.03);
+      --th-fg:#1e293b;
     }
 
     *{box-sizing:border-box}
@@ -78,10 +78,7 @@
     header .subtitle{margin:2px 0 0 0;opacity:.95}
 
     /* Theme toggle (top-right) */
-    .theme-toggle{
-      display:inline-flex; align-items:center; gap:10px;
-      color:#fff; user-select:none;
-    }
+    .theme-toggle{ display:inline-flex; align-items:center; gap:10px; color:#fff; user-select:none; }
     .switch{
       position:relative; width:58px; height:30px; border-radius:999px;
       background:var(--toggle-track); border:1px solid rgba(255,255,255,.2);
@@ -128,10 +125,10 @@
     }
     .addon,.suffix{
       display:flex; align-items:center; justify-content:center; padding:0 10px; height:100%;
-      color:#cfe3ff; background:rgba(0,94,184,.14); border-right:1px solid var(--line);
+      color:#2156a3; background:#eaf3ff; border-right:1px solid var(--line);
     }
-    [data-theme="light"] .addon, [data-theme="light"] .suffix{
-      color:#2156a3; background:#eaf3ff;
+    [data-theme="dark"] .addon, [data-theme="dark"] .suffix{
+      color:#cfe3ff; background:rgba(0,94,184,.14);
     }
     .suffix{ border-right:0; border-left:1px solid var(--line) }
     .group input{
@@ -150,12 +147,18 @@
     .helper{ color:var(--muted); margin-top:8px; line-height:1.6; }
     .period .helper{ width:100%; max-width:none; }
 
+    /* Auto-map checkbox */
+    .auto-map{
+      margin-top:16px; padding:12px; border:1px dashed var(--line); border-radius:12px; background:var(--surface-2);
+    }
+    .auto-map label{ display:flex; align-items:center; gap:10px; font-weight:700; }
+    .auto-map input[type="checkbox"]{ width:18px; height:18px; }
+
     /* Table */
     .table-wrap{overflow:auto; border:1px solid var(--line); border-radius:12px; background:var(--surface-2); margin-top:10px}
     table{width:100%; border-collapse:collapse}
     th,td{padding:11px 12px; border-bottom:1px solid var(--line)}
-    th{background:var(--table-header-grad); text-align:left; color:#1e293b; }
-    [data-theme="dark"] th{ color:#d9e9ff; }
+    th{background:var(--table-header-grad); text-align:left; color:var(--th-fg); }
     tbody tr:hover{background:var(--hover-row)}
     tbody td input{
       width:100%; background:transparent; border:1px solid transparent; border-radius:8px; padding:8px 10px; color:var(--ink);
@@ -191,7 +194,7 @@
     }
   </style>
 </head>
-<body>
+<body data-theme="light"><!-- light is default -->
   <header>
     <div class="brand">
       <h1 class="title">Simulation Input Generator</h1>
@@ -200,8 +203,8 @@
 
     <!-- Theme Toggle (top-right) -->
     <div class="theme-toggle">
-      <span id="themeLabel" aria-live="polite">Dark mode</span>
-      <button id="themeSwitch" class="switch" role="switch" aria-checked="false" aria-label="Toggle light/dark theme" type="button">
+      <span id="themeLabel" aria-live="polite">Light mode</span>
+      <button id="themeSwitch" class="switch" role="switch" aria-checked="true" aria-label="Toggle light/dark theme" type="button">
         <!-- moon -->
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M12.5 3a8.5 8.5 0 1 0 8 11.1A7.5 7.5 0 1 1 12.5 3z" stroke="currentColor"/>
@@ -219,7 +222,7 @@
   <main>
     <section class="card" aria-label="Simulation Input Form">
       <h2>Configuration</h2>
-      <p class="desc">Set filename and coupling period, map Targets ↔ Wells, then generate your <span class="pill">.ixf</span> file.</p>
+      <p class="desc">Set filename and coupling period, choose mapping mode, then generate your <span class="pill">.ixf</span> file.</p>
 
       <!-- Option A control bar -->
       <div class="control-bar">
@@ -229,8 +232,8 @@
           <div class="group">
             <div class="addon" aria-hidden="true">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M6 3h7l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" stroke="#2156a3"/>
-                <path d="M13 3v5h5" stroke="#2156a3"/>
+                <path d="M6 3h7l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" stroke="currentColor"/>
+                <path d="M13 3v5h5" stroke="currentColor"/>
               </svg>
             </div>
             <input id="filename" type="text" placeholder="network_run01" aria-describedby="filenameHelp" />
@@ -247,8 +250,8 @@
           <div class="group">
             <div class="addon" aria-hidden="true">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="9" stroke="#2156a3"/>
-                <path d="M12 7v6l4 2" stroke="#2156a3"/>
+                <circle cx="12" cy="12" r="9" stroke="currentColor"/>
+                <path d="M12 7v6l4 2" stroke="currentColor"/>
               </svg>
             </div>
             <input id="couplingPeriod" type="number" min="1" step="1" value="60" inputmode="numeric" pattern="[0-9]*" aria-describedby="periodHelp" />
@@ -260,8 +263,19 @@
         </div>
       </div>
 
+      <!-- Auto-map option -->
+      <div class="auto-map">
+        <label for="autoMap">
+          <input id="autoMap" type="checkbox" />
+          Automatic Map Boundary Nodes
+        </label>
+        <p class="helper">
+          Automatically map the network boundary wells to the reservoir wells. Should only be used if the Target names is an exactly match to the Well Decline curves name
+        </p>
+      </div>
+
       <!-- Mapping table -->
-      <div class="field" style="margin-top:16px;">
+      <div class="field" style="margin-top:12px;">
         <div class="label">Boundary Nodes Map</div>
         <p class="helper">
           Assign each <strong>Well Target Name</strong> (from Field Layout Generator) to a <strong>Well Name</strong> (from decline curves).
@@ -300,23 +314,22 @@
   </main>
 
   <script>
-    // Theme toggle with persistence
+    // --- THEME: light is default ---
     (function(){
       const root = document.documentElement;
       const btn  = document.getElementById('themeSwitch');
       const label= document.getElementById('themeLabel');
 
       function setTheme(theme){
-        if(theme === 'light'){ root.setAttribute('data-theme','light'); btn.setAttribute('aria-checked','true'); label.textContent='Light mode'; }
-        else { root.removeAttribute('data-theme'); btn.setAttribute('aria-checked','false'); label.textContent='Dark mode'; }
+        root.setAttribute('data-theme', theme);
+        btn.setAttribute('aria-checked', theme === 'light' ? 'true' : 'false');
+        label.textContent = theme === 'light' ? 'Light mode' : 'Dark mode';
         try{ localStorage.setItem('ixf_theme', theme); }catch{}
       }
-      // init from storage or prefers-color-scheme
-      let init = 'dark';
+      let init = 'light'; // default
       try{
         const stored = localStorage.getItem('ixf_theme');
-        if(stored){ init = stored; }
-        else if(window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches){ init = 'light'; }
+        if(stored === 'dark' || stored === 'light'){ init = stored; }
       }catch{}
       setTheme(init);
 
@@ -326,11 +339,11 @@
       });
     })();
 
-    // Safe filenames and quoting in IXF.
+    // --- Utilities ---
     function sanitizeFilename(name){ const t=String(name).trim(); const s=t.replace(/[^A-Za-z0-9._-]/g,"_"); return s || "network_config"; }
     function escapeQuoted(str){ return String(str).replace(/\\/g,"\\\\").replace(/"/g,'\\"'); }
 
-    // Table row helpers + Excel paste
+    // --- Table helpers & Excel paste ---
     function addRow(target="", well=""){
       const tbody=document.getElementById("mapBody");
       const tr=document.createElement("tr");
@@ -390,14 +403,32 @@
       });
     }
 
-    // Build and download IXF
+    // --- Auto-map toggle behavior ---
+    const autoMap = document.getElementById('autoMap');
+    const addRowBtn = document.getElementById('addRowBtn');
+    const clearRowsBtn = document.getElementById('clearRowsBtn');
+
+    function setAutoMapState(enabled){
+      if(enabled){
+        document.getElementById("mapBody").innerHTML = "";   // clear rows
+      }
+      addRowBtn.disabled = enabled;      // Add Row inactive when auto-map
+      clearRowsBtn.disabled = enabled;   // avoid confusion (table is managed automatically)
+    }
+    autoMap.addEventListener('change', (e)=> setAutoMapState(e.target.checked));
+
+    // --- IXF builder ---
     function buildIXF(){
       const filename=sanitizeFilename(document.getElementById("filename").value);
-      const periodRaw=document.getElementById("couplingPeriod").value;
-      const period=parseInt(periodRaw,10);
+      const period=parseInt(document.getElementById("couplingPeriod").value,10);
+      const auto = autoMap.checked;
+
       if(!Number.isFinite(period)||period<1) throw new Error("Coupling Period (Days) must be a positive integer.");
-      const mappings=collectRows();
-      if(mappings.length===0) throw new Error("Add at least one Target ↔ Well mapping.");
+
+      const mappings = collectRows();
+      if(!auto && mappings.length===0){
+        throw new Error("Add at least one Target ↔ Well mapping or enable Automatic Map Boundary Nodes.");
+      }
 
       const lines=[];
       lines.push("START","",
@@ -411,25 +442,35 @@
         "}","",
         'NetworkBalanceAction "ACT_NET_BAL" {',
         "    VerbosityLevel=5",
-        '    DefaultCouplingLocation="BOTTOM_HOLE"',
-        "    BoundaryNodesMap=[");
-      mappings.forEach(([target,well])=>{ lines.push(`    NetworkWellBoundary("${escapeQuoted(target)}") Well("${escapeQuoted(well)}")`); });
-      lines.push("                      ]",
-        '    DefaultWellConstraint="OIL_FLOW_RATE"',
-        "    IPRConstraintType=PRESSURE",
-        "}","",
-        "# ---------------------------------------------------------------------------------------------------",
-        "#  Setup strategy",
-        "# ---------------------------------------------------------------------------------------------------",
-        "# Strategy: applies the instruction to test all the wells and applies the guide rate balance action",
-        'CombinedNetworkBalanceAction "CB_NB" {',
-        '	NetworkBalanceActions=[ NetworkBalanceAction("ACT_NET_BAL") ]    ',
-        "}","",
-        'Strategy "STRATEGY_1" {',
-        '    BalancingAction=CombinedNetworkBalanceAction("CB_NB")',
-        "}");
+        '    DefaultCouplingLocation="BOTTOM_HOLE"');
+
+      if(auto){
+        lines.push("    automatically_map_boundary_nodes()");
+      }else{
+        lines.push("    BoundaryNodesMap=[");
+        mappings.forEach(([target,well])=>{
+          lines.push(`    NetworkWellBoundary("${escapeQuoted(target)}") Well("${escapeQuoted(well)}")`);
+        });
+        lines.push("                      ]");
+      }
+
+      lines.push('    DefaultWellConstraint="OIL_FLOW_RATE"',
+                  "    IPRConstraintType=PRESSURE",
+                  "}","",
+                  "# ---------------------------------------------------------------------------------------------------",
+                  "#  Setup strategy",
+                  "# ---------------------------------------------------------------------------------------------------",
+                  "# Strategy: applies the instruction to test all the wells and applies the guide rate balance action",
+                  'CombinedNetworkBalanceAction "CB_NB" {',
+                  '	NetworkBalanceActions=[ NetworkBalanceAction("ACT_NET_BAL") ]    ',
+                  "}","",
+                  'Strategy "STRATEGY_1" {',
+                  '    BalancingAction=CombinedNetworkBalanceAction("CB_NB")',
+                  "}");
       return {filename,content:lines.join("\n")};
     }
+
+    // --- Download & Preview toggle ---
     function downloadIXF(filename,content){
       const blob=new Blob([content],{type:"text/plain;charset=utf-8"});
       const url=URL.createObjectURL(blob);
@@ -438,7 +479,6 @@
       document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
     }
 
-    // Preview toggle
     const previewCard=document.getElementById("previewCard");
     const previewBox=document.getElementById("previewBox");
     const previewToggleBtn=document.getElementById("previewToggleBtn");
@@ -450,7 +490,7 @@
     let previewVisible=false;
     previewToggleBtn.addEventListener("click", ()=>{ previewVisible=!previewVisible; setPreview(previewVisible); });
 
-    // Table actions
+    // --- Buttons ---
     document.getElementById("addRowBtn").addEventListener("click", ()=> addRow());
     document.getElementById("clearRowsBtn").addEventListener("click", ()=>{ document.getElementById("mapBody").innerHTML=""; });
     document.getElementById("generateBtn").addEventListener("click", ()=>{
