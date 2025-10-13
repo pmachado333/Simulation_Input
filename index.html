@@ -6,7 +6,6 @@
   <title>Simulation Input Generator</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    /* ---------- Core tokens shared by both themes ---------- */
     :root{
       --brand:#005EB8; --brand-600:#005EB8; --brand-700:#084a8e;
       --radius:14px; --gap:16px; --control-h:44px;
@@ -14,32 +13,26 @@
       --inset: inset 0 0 0 1px rgba(0,0,0,.03);
       --grid-size:28px;
     }
-
-    /* ---------- DARK THEME (base) ---------- */
+    /* DARK (base tokens) */
     :root{
       --ink:#e9eef8; --muted:#a9b6cf;
       --bg:#0e1424; --bg-g1: rgba(53,182,255,.08); --bg-g2: rgba(0,94,184,.10);
       --surface:#121a2d; --surface-2:#18233a;
-      --line:#28344c;
-      --grid-color:#0f1730;
+      --line:#28344c; --grid-color:#0f1730;
       --table-header-grad: linear-gradient(180deg, rgba(0,94,184,.20), rgba(0,94,184,.07));
       --hover-row: rgba(53,182,255,.06);
       --pill-bg: rgba(53,182,255,.14);
       --preview-bg:#0b1222; --preview-fg:#e2e8f0;
-      --btn-bg: rgba(255,255,255,.05);
-      --btn-bg-hover: rgba(255,255,255,.09);
-      --toggle-track:#16243c; --toggle-thumb:#ffffff;
-      --toggle-icon:#cfe3ff;
+      --btn-bg: rgba(255,255,255,.05); --btn-bg-hover: rgba(255,255,255,.09);
+      --toggle-track:#16243c; --toggle-thumb:#ffffff; --toggle-icon:#cfe3ff;
       --th-fg:#d9e9ff;
     }
-
-    /* ---------- LIGHT THEME OVERRIDES ---------- */
-    [data-theme="light"]{
+    /* LIGHT overrides (apply on body attr) */
+    body[data-theme="light"]{
       --ink:#0b1020; --muted:#5b6473;
       --bg:#f7f9fc; --bg-g1: rgba(0,94,184,.06); --bg-g2: rgba(53,182,255,.06);
       --surface:#ffffff; --surface-2:#f8fbff;
-      --line:#e6e8ee;
-      --grid-color:#e9eef8;
+      --line:#e6e8ee; --grid-color:#e9eef8;
       --table-header-grad: linear-gradient(180deg, #eef5ff, #f6faff);
       --hover-row:#f3f8ff;
       --pill-bg:#eaf3ff;
@@ -66,7 +59,6 @@
       background-size: var(--grid-size) var(--grid-size);
     }
 
-    /* Header (unchanged across themes) */
     header{
       background:linear-gradient(90deg, var(--brand-700), var(--brand-600));
       color:#fff; padding:14px 22px; box-shadow:0 3px 14px rgba(0,0,0,.2);
@@ -77,7 +69,6 @@
     header .title{font-size:24px;font-weight:800;margin:0}
     header .subtitle{margin:2px 0 0 0;opacity:.95}
 
-    /* Theme toggle (top-right) */
     .theme-toggle{ display:inline-flex; align-items:center; gap:10px; color:#fff; user-select:none; }
     .switch{
       position:relative; width:58px; height:30px; border-radius:999px;
@@ -89,104 +80,78 @@
       position:absolute; top:3px; left:3px; width:24px; height:24px; background:var(--toggle-thumb);
       border-radius:50%; box-shadow:0 2px 6px rgba(0,0,0,.25); transition:left .18s ease;
     }
-    [data-theme="light"] .thumb{ left:31px; }
+    body[data-theme="light"] .thumb{ left:31px; }
 
     main{min-height:calc(100vh - 68px); display:grid; place-items:start center; padding:28px;}
 
     .card{
-      width:min(960px,100%);
-      background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01)), var(--surface);
-      border:1px solid var(--line);
-      border-radius:var(--radius);
-      box-shadow:var(--shadow);
-      padding:20px;
+      width:min(960px,100%); background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01)), var(--surface);
+      border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); padding:20px;
     }
     h2{margin:0 0 10px}
     p.desc{color:var(--muted);margin:0 0 16px}
 
-    /* Option A: fixed two-column grid, left-pinned */
     .control-bar{
-      display:grid;
-      gap:24px;
-      margin:12px 0 0;
-      grid-template-columns: 520px 320px; /* filename col | period col */
-      align-items:start;
-      width:max-content;                  /* keeps both blocks snug-left */
+      display:grid; gap:24px; margin:12px 0 0;
+      grid-template-columns: 520px 320px; align-items:start; width:max-content;
     }
     .field{display:flex; flex-direction:column}
     .label{font-weight:750; font-size:.96rem; margin-bottom:6px; white-space:nowrap;}
 
     .group{
-      display:flex; align-items:center;
-      background: var(--surface-2);
-      border:1px solid var(--line); border-radius:12px; overflow:hidden;
-      box-shadow: var(--inset);
-      height: var(--control-h);
+      display:flex; align-items:center; background: var(--surface-2);
+      border:1px solid var(--line); border-radius:12px; overflow:hidden; box-shadow: var(--inset);
+      height: 44px;
     }
     .addon,.suffix{
       display:flex; align-items:center; justify-content:center; padding:0 10px; height:100%;
       color:#2156a3; background:#eaf3ff; border-right:1px solid var(--line);
     }
-    [data-theme="dark"] .addon, [data-theme="dark"] .suffix{
-      color:#cfe3ff; background:rgba(0,94,184,.14);
-    }
+    body:not([data-theme="light"]) .addon,
+    body:not([data-theme="light"]) .suffix{ color:#cfe3ff; background:rgba(0,94,184,.14); }
     .suffix{ border-right:0; border-left:1px solid var(--line) }
     .group input{
       flex:1; min-width:0; border:0; outline:none; background:transparent; color:var(--ink);
       height:100%; padding:0 12px;
     }
     .group input::placeholder{color:#7b89a5}
-    [data-theme="light"] .group input::placeholder{color:#94a3b8}
+    body[data-theme="light"] .group input::placeholder{color:#94a3b8}
     .group:focus-within{ box-shadow:0 0 0 3px rgba(53,182,255,.2), var(--inset); border-color:rgba(53,182,255,.4); }
 
-    /* Filename ~2/3 of its column */
     .filename .group{ width: clamp(320px, 66%, 360px); }
-    /* Period spinner size; helper gets full column width (320px) */
     .period   .group{ width:220px; }
 
     .helper{ color:var(--muted); margin-top:8px; line-height:1.6; }
     .period .helper{ width:100%; max-width:none; }
 
-    /* Auto-map checkbox */
     .auto-map{
       margin-top:16px; padding:12px; border:1px dashed var(--line); border-radius:12px; background:var(--surface-2);
     }
     .auto-map label{ display:flex; align-items:center; gap:10px; font-weight:700; }
     .auto-map input[type="checkbox"]{ width:18px; height:18px; }
 
-    /* Table */
     .table-wrap{overflow:auto; border:1px solid var(--line); border-radius:12px; background:var(--surface-2); margin-top:10px}
     table{width:100%; border-collapse:collapse}
     th,td{padding:11px 12px; border-bottom:1px solid var(--line)}
-    th{background:var(--table-header-grad); text-align:left; color:var(--th-fg); }
+    th{background:var(--table-header-grad); text-align:left; color:var(--th-fg);}
     tbody tr:hover{background:var(--hover-row)}
-    tbody td input{
-      width:100%; background:transparent; border:1px solid transparent; border-radius:8px; padding:8px 10px; color:var(--ink);
-    }
+    tbody td input{ width:100%; background:transparent; border:1px solid transparent; border-radius:8px; padding:8px 10px; color:var(--ink);}
     tbody td input:focus{ border-color:rgba(53,182,255,.4); background:rgba(53,182,255,.08); outline:none; }
-    [data-theme="light"] tbody td input:focus{ background:#f0f7ff; }
+    body[data-theme="light"] tbody td input:focus{ background:#f0f7ff; }
 
     .controls{display:flex; gap:10px; flex-wrap:wrap; margin-top:14px}
-    button{
-      padding:10px 14px; border-radius:12px; border:1px solid var(--line); background:var(--btn-bg); color:var(--ink); cursor:pointer;
-      transition: transform .04s ease, background .15s ease, box-shadow .2s ease;
-    }
+    button{ padding:10px 14px; border-radius:12px; border:1px solid var(--line); background:var(--btn-bg); color:var(--ink); cursor:pointer;
+      transition: transform .04s ease, background .15s ease, box-shadow .2s ease; }
     button:hover{ background:var(--btn-bg-hover) }
     button:active{ transform: translateY(1px) }
-    button.primary{
-      background:linear-gradient(90deg, var(--brand-700), var(--brand-600));
-      border-color:rgba(53,182,255,.4); color:#fff;
-      box-shadow:0 6px 16px rgba(0,94,184,.25), inset 0 0 0 1px rgba(255,255,255,.06);
-    }
+    button.primary{ background:linear-gradient(90deg, var(--brand-700), var(--brand-600)); border-color:rgba(53,182,255,.4); color:#fff;
+      box-shadow:0 6px 16px rgba(0,94,184,.25), inset 0 0 0 1px rgba(255,255,255,.06); }
 
-    pre.preview{
-      white-space:pre; background:var(--preview-bg); color:var(--preview-fg); padding:14px; border-radius:12px; border:1px solid var(--line);
-      overflow:auto; max-height:52vh; box-shadow: var(--inset);
-    }
+    pre.preview{ white-space:pre; background:var(--preview-bg); color:var(--preview-fg); padding:14px; border-radius:12px; border:1px solid var(--line);
+      overflow:auto; max-height:52vh; box-shadow: var(--inset); }
     .pill{display:inline-block;background:var(--pill-bg); color:#1f3d77; padding:2px 8px; border-radius:999px; font-size:.85rem}
-    [data-theme="dark"] .pill{ color:#cfe3ff; }
+    body:not([data-theme="light"]) .pill{ color:#cfe3ff; }
 
-    /* Mobile fallback */
     @media (max-width: 920px){
       .control-bar{ grid-template-columns: 1fr; width:100%; }
       .filename .group{ width:100%; }
@@ -194,22 +159,18 @@
     }
   </style>
 </head>
-<body data-theme="light"><!-- light is default -->
+<body data-theme="light">
   <header>
     <div class="brand">
       <h1 class="title">Simulation Input Generator</h1>
       <p class="subtitle">By Patrick Machado</p>
     </div>
-
-    <!-- Theme Toggle (top-right) -->
     <div class="theme-toggle">
       <span id="themeLabel" aria-live="polite">Light mode</span>
       <button id="themeSwitch" class="switch" role="switch" aria-checked="true" aria-label="Toggle light/dark theme" type="button">
-        <!-- moon -->
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M12.5 3a8.5 8.5 0 1 0 8 11.1A7.5 7.5 0 1 1 12.5 3z" stroke="currentColor"/>
         </svg>
-        <!-- sun -->
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <circle cx="12" cy="12" r="4" stroke="currentColor"/>
           <path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" stroke="currentColor"/>
@@ -224,9 +185,7 @@
       <h2>Configuration</h2>
       <p class="desc">Set filename and coupling period, choose mapping mode, then generate your <span class="pill">.ixf</span> file.</p>
 
-      <!-- Option A control bar -->
       <div class="control-bar">
-        <!-- Filename -->
         <div class="field filename">
           <div class="label">Output filename</div>
           <div class="group">
@@ -244,7 +203,6 @@
           </div>
         </div>
 
-        <!-- Coupling Period -->
         <div class="field period">
           <div class="label">Coupling Period (Days)</div>
           <div class="group">
@@ -257,13 +215,11 @@
             <input id="couplingPeriod" type="number" min="1" step="1" value="60" inputmode="numeric" pattern="[0-9]*" aria-describedby="periodHelp" />
           </div>
           <div id="periodHelp" class="helper">
-            Specifies the minimum time period between two consecutive network solves, starting at (local) time zero for each<br/>
-            reservoir interacting with the network
+            Specifies the minimum time period between two consecutive network solves, starting at (local) time zero for each reservoir interacting with the network
           </div>
         </div>
       </div>
 
-      <!-- Auto-map option -->
       <div class="auto-map">
         <label for="autoMap">
           <input id="autoMap" type="checkbox" />
@@ -274,7 +230,6 @@
         </p>
       </div>
 
-      <!-- Mapping table -->
       <div class="field" style="margin-top:12px;">
         <div class="label">Boundary Nodes Map</div>
         <p class="helper">
@@ -299,13 +254,11 @@
         </div>
       </div>
 
-      <!-- Actions -->
       <div class="controls" style="margin-top:16px">
         <button id="previewToggleBtn" type="button">Preview</button>
         <button id="generateBtn" type="button" class="primary">Generate .ixf</button>
       </div>
 
-      <!-- Preview -->
       <div id="previewCard" style="display:none; margin-top:12px;">
         <div class="label" style="margin-bottom:6px">Preview</div>
         <pre class="preview" id="previewBox"></pre>
@@ -314,65 +267,64 @@
   </main>
 
   <script>
-    // --- THEME: light is default ---
+    // Theme (body attribute only)
     (function(){
-      const root = document.documentElement;
+      const body = document.body;
       const btn  = document.getElementById('themeSwitch');
       const label= document.getElementById('themeLabel');
 
       function setTheme(theme){
-        root.setAttribute('data-theme', theme);
+        body.setAttribute('data-theme', theme);
         btn.setAttribute('aria-checked', theme === 'light' ? 'true' : 'false');
         label.textContent = theme === 'light' ? 'Light mode' : 'Dark mode';
         try{ localStorage.setItem('ixf_theme', theme); }catch{}
       }
-      let init = 'light'; // default
+      let init = 'light';
       try{
         const stored = localStorage.getItem('ixf_theme');
         if(stored === 'dark' || stored === 'light'){ init = stored; }
       }catch{}
       setTheme(init);
-
-      btn.addEventListener('click', ()=>{
-        const isLight = root.getAttribute('data-theme') === 'light';
-        setTheme(isLight ? 'dark' : 'light');
-      });
+      btn.addEventListener('click', ()=> setTheme(body.getAttribute('data-theme') === 'light' ? 'dark' : 'light'));
     })();
 
-    // --- Utilities ---
+    // Utils
     function sanitizeFilename(name){ const t=String(name).trim(); const s=t.replace(/[^A-Za-z0-9._-]/g,"_"); return s || "network_config"; }
     function escapeQuoted(str){ return String(str).replace(/\\/g,"\\\\").replace(/"/g,'\\"'); }
 
-    // --- Table helpers & Excel paste ---
+    // Table helpers & Excel paste
+    const mapBody = document.getElementById("mapBody");
     function addRow(target="", well=""){
-      const tbody=document.getElementById("mapBody");
       const tr=document.createElement("tr");
 
       const tdTarget=document.createElement("td");
       const inTarget=document.createElement("input");
       inTarget.type="text"; inTarget.placeholder='Well1'; inTarget.value=target;
       inTarget.addEventListener("paste", handleGridPaste);
+      inTarget.addEventListener("input", refreshPreviewIfVisible); // live preview
       tdTarget.appendChild(inTarget);
 
       const tdWell=document.createElement("td");
       const inWell=document.createElement("input");
       inWell.type="text"; inWell.placeholder='P1'; inWell.value=well;
       inWell.addEventListener("paste", handleGridPaste);
+      inWell.addEventListener("input", refreshPreviewIfVisible);
       tdWell.appendChild(inWell);
 
       const tdAct=document.createElement("td");
       const del=document.createElement("button");
       del.type="button"; del.className="danger"; del.textContent="Delete";
-      del.addEventListener("click",()=>tr.remove());
+      del.addEventListener("click", ()=>{ tr.remove(); refreshPreviewIfVisible(); });
       tdAct.appendChild(del);
 
       tr.append(tdTarget,tdWell,tdAct);
-      tbody.appendChild(tr);
+      mapBody.appendChild(tr);
+      refreshPreviewIfVisible(); // reflect new empty row if needed
       return tr;
     }
-    function ensureRowCount(n){ const tbody=document.getElementById("mapBody"); while(tbody.rows.length<n) addRow(); }
+    function ensureRowCount(n){ while(mapBody.rows.length<n) addRow(); }
     function collectRows(){
-      const rows=[]; document.querySelectorAll("#mapBody tr").forEach(tr=>{
+      const rows=[]; mapBody.querySelectorAll("tr").forEach(tr=>{
         const t=tr.cells[0].querySelector("input").value.trim();
         const w=tr.cells[1].querySelector("input").value.trim();
         if(t && w) rows.push([t,w]);
@@ -380,8 +332,8 @@
     }
     function parseClipboard(text){ const lines=String(text).replace(/\r\n/g,"\n").replace(/\r/g,"\n").split("\n").filter(l=>l.length>0); return lines.map(l=>l.split("\t")); }
     function getCellPosition(input){
-      const tr=input.closest("tr"); const tbody=document.getElementById("mapBody");
-      const rowIndex=Array.from(tbody.rows).indexOf(tr);
+      const tr=input.closest("tr");
+      const rowIndex=Array.from(mapBody.rows).indexOf(tr);
       const cellIndex=Array.from(tr.cells).indexOf(input.closest("td"));
       return {rowIndex,cellIndex};
     }
@@ -389,35 +341,37 @@
       const txt=(e.clipboardData||window.clipboardData).getData("text");
       if(!txt || (!txt.includes("\t") && !txt.includes("\n"))) return;
       e.preventDefault();
+
       const data=parseClipboard(txt);
       const {rowIndex,cellIndex}=getCellPosition(e.target);
-      const tbody=document.getElementById("mapBody");
+
       const needed=rowIndex+data.length; ensureRowCount(needed);
+
       data.forEach((cols,i)=>{
-        const r=tbody.rows[rowIndex+i];
+        const r=mapBody.rows[rowIndex+i];
         const tInput=r.cells[0].querySelector("input");
         const wInput=r.cells[1].querySelector("input");
         const c0=cols[0]??""; const c1=cols[1]??"";
         if(cellIndex===0){ if(c0!=="") tInput.value=c0; if(c1!=="") wInput.value=c1; }
         else { if(c0!=="") wInput.value=c0; }
       });
+      refreshPreviewIfVisible(); // reflect pasted values
     }
 
-    // --- Auto-map toggle behavior ---
+    // Auto-map behavior
     const autoMap = document.getElementById('autoMap');
     const addRowBtn = document.getElementById('addRowBtn');
     const clearRowsBtn = document.getElementById('clearRowsBtn');
 
     function setAutoMapState(enabled){
-      if(enabled){
-        document.getElementById("mapBody").innerHTML = "";   // clear rows
-      }
-      addRowBtn.disabled = enabled;      // Add Row inactive when auto-map
-      clearRowsBtn.disabled = enabled;   // avoid confusion (table is managed automatically)
+      if(enabled){ mapBody.innerHTML = ""; }
+      addRowBtn.disabled = enabled;
+      clearRowsBtn.disabled = enabled;
+      refreshPreviewIfVisible();
     }
     autoMap.addEventListener('change', (e)=> setAutoMapState(e.target.checked));
 
-    // --- IXF builder ---
+    // IXF builder
     function buildIXF(){
       const filename=sanitizeFilename(document.getElementById("filename").value);
       const period=parseInt(document.getElementById("couplingPeriod").value,10);
@@ -426,9 +380,7 @@
       if(!Number.isFinite(period)||period<1) throw new Error("Coupling Period (Days) must be a positive integer.");
 
       const mappings = collectRows();
-      if(!auto && mappings.length===0){
-        throw new Error("Add at least one Target ↔ Well mapping or enable Automatic Map Boundary Nodes.");
-      }
+      if(!auto && mappings.length===0) throw new Error("Add at least one Target ↔ Well mapping or enable Automatic Map Boundary Nodes.");
 
       const lines=[];
       lines.push("START","",
@@ -470,33 +422,36 @@
       return {filename,content:lines.join("\n")};
     }
 
-    // --- Download & Preview toggle ---
-    function downloadIXF(filename,content){
-      const blob=new Blob([content],{type:"text/plain;charset=utf-8"});
-      const url=URL.createObjectURL(blob);
-      const a=document.createElement("a"); a.href=url;
-      a.download=filename.endsWith(".ixf")?filename:filename+".ixf";
-      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-    }
-
+    // Download & Preview
     const previewCard=document.getElementById("previewCard");
     const previewBox=document.getElementById("previewBox");
     const previewToggleBtn=document.getElementById("previewToggleBtn");
+    let previewVisible=false;
+
     function setPreview(visible){
+      previewVisible = visible;
       previewCard.style.display = visible ? "block" : "none";
       previewToggleBtn.textContent = visible ? "Hide Preview" : "Preview";
-      if (visible){ const {content}=buildIXF(); previewBox.textContent=content; previewCard.scrollIntoView({behavior:"smooth",block:"start"}); }
+      if (visible){
+        try{ const {content}=buildIXF(); previewBox.textContent=content; }catch(err){ previewBox.textContent = "[Error] " + err.message; }
+      }
     }
-    let previewVisible=false;
-    previewToggleBtn.addEventListener("click", ()=>{ previewVisible=!previewVisible; setPreview(previewVisible); });
+    function refreshPreviewIfVisible(){
+      if(!previewVisible) return;
+      setPreview(true); // rebuild content
+    }
 
-    // --- Buttons ---
+    document.getElementById("couplingPeriod").addEventListener("input", refreshPreviewIfVisible);
+
     document.getElementById("addRowBtn").addEventListener("click", ()=> addRow());
-    document.getElementById("clearRowsBtn").addEventListener("click", ()=>{ document.getElementById("mapBody").innerHTML=""; });
+    document.getElementById("clearRowsBtn").addEventListener("click", ()=>{ mapBody.innerHTML=""; refreshPreviewIfVisible(); });
     document.getElementById("generateBtn").addEventListener("click", ()=>{
-      try{ const {filename,content}=buildIXF(); downloadIXF(filename,content); }
-      catch(err){ alert(err.message); }
+      try{ const {filename,content}=buildIXF(); const blob=new Blob([content],{type:"text/plain;charset=utf-8"});
+        const url=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url;
+        a.download=filename.endsWith(".ixf")?filename:filename+".ixf"; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+      }catch(err){ alert(err.message); }
     });
+    previewToggleBtn.addEventListener("click", ()=> setPreview(!previewVisible));
 
     // Seed demo rows
     [["Well1","P1"],["Well2","P2"],["Well3","P3"]].forEach(([t,w])=>addRow(t,w));
