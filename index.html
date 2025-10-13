@@ -1,0 +1,334 @@
+<!-- /index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Simulation Input Generator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root{
+      --brand:#005EB8; --brand-600:#005EB8; --brand-700:#084a8e;
+      --ink:#e9eef8; --muted:#a9b6cf;
+      --bg:#0e1424; --bg-g1: rgba(53,182,255,.08); --bg-g2: rgba(0,94,184,.10);
+      --surface:#121a2d; --surface-2:#18233a;
+      --line:#28344c;
+      --radius:14px; --gap:16px; --control-h:44px;
+      --shadow:0 10px 26px rgba(0,0,0,.22);
+      --inset: inset 0 0 0 1px rgba(255,255,255,.03);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; color:var(--ink); font:15px/1.5 system-ui, Segoe UI, Arial, sans-serif; background:var(--bg);
+      background-image:
+        radial-gradient(900px 480px at 85% -10%, var(--bg-g1), transparent 60%),
+        radial-gradient(860px 520px at -10% 110%, var(--bg-g2), transparent 60%);
+    }
+    body::before{content:""; position:fixed; inset:0; pointer-events:none; opacity:.08;
+      background-image: linear-gradient(to right, #0f1730 1px, transparent 1px),
+                        linear-gradient(to bottom, #0f1730 1px, transparent 1px);
+      background-size: 28px 28px;
+    }
+
+    header{
+      background:linear-gradient(90deg, var(--brand-700), var(--brand-600));
+      color:#fff; padding:18px 22px; box-shadow:0 3px 14px rgba(0,0,0,.2);
+      border-bottom:1px solid rgba(255,255,255,.08);
+    }
+    header .title{font-size:24px;font-weight:800;margin:0}
+    header .subtitle{margin:2px 0 0 0;opacity:.95}
+
+    main{min-height:calc(100vh - 68px); display:grid; place-items:start center; padding:28px;}
+
+    .card{
+      width:min(960px,100%);
+      background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,.01)), var(--surface);
+      border:1px solid rgba(255,255,255,.07);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:20px;
+    }
+    h2{margin:0 0 10px}
+    p.desc{color:var(--muted);margin:0 0 16px}
+
+    /* Control bar pinned to the left with fixed columns so Period doesn't drift right */
+    .control-bar{
+      display:grid;
+      gap:24px;
+      margin:12px 0 0;
+      grid-template-columns: 560px 360px;  /* filename col, period col */
+      align-items:start;
+      width:max-content;                    /* shrink-to-fit so both blocks sit left */
+    }
+    .field{display:flex; flex-direction:column}
+    .label{font-weight:750; font-size:.96rem; margin-bottom:6px; white-space:nowrap;}
+
+    .group{
+      display:flex; align-items:center;
+      background: var(--surface-2);
+      border:1px solid var(--line); border-radius:12px; overflow:hidden;
+      box-shadow: var(--inset);
+      height: var(--control-h);
+    }
+    .addon,.suffix{
+      display:flex; align-items:center; justify-content:center; padding:0 10px; height:100%;
+      color:#cfe3ff; background:rgba(0,94,184,.14); border-right:1px solid var(--line);
+    }
+    .suffix{ border-right:0; border-left:1px solid var(--line) }
+    .group input{
+      flex:1; min-width:0; border:0; outline:none; background:transparent; color:var(--ink);
+      height:100%; padding:0 12px;
+    }
+    .group input::placeholder{color:#7b89a5}
+    .group:focus-within{ box-shadow:0 0 0 3px rgba(53,182,255,.2), var(--inset); border-color:rgba(53,182,255,.4); }
+
+    /* Filename ~2/3 of its column width (as requested) */
+    .filename .group{ width:66.666%; min-width:320px; }
+
+    /* Keep spinner size; give its column extra width so its helper can be wider */
+    .period   .group{ width:220px; }
+
+    .helper{ color:var(--muted); margin-top:8px; line-height:1.6; }
+    .period .helper{ width:100%; max-width:none; } /* Why: allow full 360px column width */
+
+    /* Table */
+    .table-wrap{overflow:auto; border:1px solid var(--line); border-radius:12px; background:var(--surface-2); margin-top:10px}
+    table{width:100%; border-collapse:collapse}
+    th,td{padding:11px 12px; border-bottom:1px solid var(--line)}
+    th{background:linear-gradient(180deg, rgba(0,94,184,.20), rgba(0,94,184,.07)); text-align:left; color:#d9e9ff; position:sticky; top:0}
+    tbody tr:hover{background:rgba(53,182,255,.06)}
+    tbody td input{width:100%; background:transparent; border:1px solid transparent; border-radius:8px; padding:8px 10px; color:var(--ink);}
+    tbody td input:focus{ border-color:rgba(53,182,255,.4); background:rgba(53,182,255,.08); outline:none; }
+
+    .controls{display:flex; gap:10px; flex-wrap:wrap; margin-top:14px}
+    button{
+      padding:10px 14px; border-radius:12px; border:1px solid var(--line); background:rgba(255,255,255,.05); color:var(--ink); cursor:pointer;
+      transition: transform .04s ease, background .15s ease, box-shadow .2s ease;
+    }
+    button:hover{ background:rgba(255,255,255,.09) }
+    button:active{ transform: translateY(1px) }
+    button.primary{
+      background:linear-gradient(90deg, var(--brand-700), var(--brand-600));
+      border-color:rgba(53,182,255,.4); color:#fff;
+      box-shadow:0 6px 16px rgba(0,94,184,.25), inset 0 0 0 1px rgba(255,255,255,.06);
+    }
+    button.danger{ background:linear-gradient(180deg, #b32626, #8f1d1d); border-color:#cc3a3a; color:#fff }
+
+    pre.preview{
+      white-space:pre; background:#0b1222; color:#e2e8f0; padding:14px; border-radius:12px; border:1px solid var(--line);
+      overflow:auto; max-height:52vh; box-shadow: var(--inset);
+    }
+    .pill{display:inline-block;background:rgba(53,182,255,.14); color:#cfe3ff; padding:2px 8px; border-radius:999px; font-size:.85rem}
+  </style>
+</head>
+<body>
+  <header>
+    <h1 class="title">Simulation Input Generator</h1>
+    <p class="subtitle">By Patrick Machado</p>
+  </header>
+
+  <main>
+    <section class="card" aria-label="Simulation Input Form">
+      <h2>Configuration</h2>
+      <p class="desc">Set filename and coupling period, map Targets ↔ Wells, then generate your <span class="pill">.ixf</span> file.</p>
+
+      <!-- Left-pinned control bar (560px + 360px) -->
+      <div class="control-bar">
+        <div class="field filename">
+          <div class="label">Output filename</div>
+          <div class="group">
+            <div class="addon" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M6 3h7l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" stroke="#cfe3ff"/>
+                <path d="M13 3v5h5" stroke="#cfe3ff"/>
+              </svg>
+            </div>
+            <input id="filename" type="text" placeholder="network_run01" aria-describedby="filenameHelp" />
+            <div class="suffix">.ixf</div>
+          </div>
+          <div id="filenameHelp" class="helper">
+            Used as <strong>filename.ixf</strong> on download.
+          </div>
+        </div>
+
+        <div class="field period">
+          <div class="label">Coupling Period (Days)</div>
+          <div class="group">
+            <div class="addon" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="9" stroke="#cfe3ff"/>
+                <path d="M12 7v6l4 2" stroke="#cfe3ff"/>
+              </svg>
+            </div>
+            <input id="couplingPeriod" type="number" min="1" step="1" value="60" inputmode="numeric" pattern="[0-9]*" aria-describedby="periodHelp" />
+          </div>
+          <div id="periodHelp" class="helper">
+            Specifies the minimum time period between two consecutive network solves, starting at (local) time zero for each reservoir interacting with the network
+          </div>
+        </div>
+      </div>
+
+      <div class="field" style="margin-top:16px;">
+        <div class="label">Boundary Nodes Map</div>
+        <p class="helper">
+          Assign each <strong>Well Target Name</strong> (from Field Layout Generator) to a <strong>Well Name</strong> (from decline curves).
+          Paste directly from Excel (two columns: Target, Well). Pasting starts at the focused cell and auto-adds rows.
+        </p>
+        <div class="table-wrap">
+          <table id="mapTable">
+            <thead>
+              <tr>
+                <th>Well Target Name</th>
+                <th>Well Name</th>
+                <th style="width:1%">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="mapBody"></tbody>
+          </table>
+        </div>
+        <div class="controls">
+          <button id="addRowBtn" type="button">+ Add Row</button>
+          <button id="clearRowsBtn" type="button" class="danger">Clear All</button>
+        </div>
+      </div>
+
+      <div class="controls" style="margin-top:16px">
+        <button id="previewBtn" type="button">Preview</button>
+        <button id="generateBtn" type="button" class="primary">Generate .ixf</button>
+      </div>
+
+      <div id="previewCard" style="display:none; margin-top:12px;">
+        <div class="label" style="margin-bottom:6px">Preview</div>
+        <pre class="preview" id="previewBox"></pre>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // Why: ensure safe filenames and proper quoting in IXF.
+    function sanitizeFilename(name){ const trimmed=String(name).trim(); const safe=trimmed.replace(/[^A-Za-z0-9._-]/g,"_"); return safe || "network_config"; }
+    function escapeQuoted(str){ return String(str).replace(/\\/g,"\\\\").replace(/"/g,'\\"'); }
+
+    function addRow(target="", well=""){
+      const tbody=document.getElementById("mapBody");
+      const tr=document.createElement("tr");
+
+      const tdTarget=document.createElement("td");
+      const inTarget=document.createElement("input");
+      inTarget.type="text"; inTarget.placeholder='Well1'; inTarget.value=target;
+      inTarget.addEventListener("paste", handleGridPaste);
+      tdTarget.appendChild(inTarget);
+
+      const tdWell=document.createElement("td");
+      const inWell=document.createElement("input");
+      inWell.type="text"; inWell.placeholder='P1'; inWell.value=well;
+      inWell.addEventListener("paste", handleGridPaste);
+      tdWell.appendChild(inWell);
+
+      const tdAct=document.createElement("td");
+      const del=document.createElement("button");
+      del.type="button"; del.className="danger"; del.textContent="Delete";
+      del.addEventListener("click",()=>tr.remove());
+      tdAct.appendChild(del);
+
+      tr.append(tdTarget,tdWell,tdAct);
+      tbody.appendChild(tr);
+      return tr;
+    }
+
+    function ensureRowCount(n){ const tbody=document.getElementById("mapBody"); while(tbody.rows.length<n) addRow(); }
+    function collectRows(){
+      const rows=[]; document.querySelectorAll("#mapBody tr").forEach(tr=>{
+        const t=tr.cells[0].querySelector("input").value.trim();
+        const w=tr.cells[1].querySelector("input").value.trim();
+        if(t && w) rows.push([t,w]);
+      }); return rows;
+    }
+    function parseClipboard(text){ const lines=String(text).replace(/\r\n/g,"\n").replace(/\r/g,"\n").split("\n").filter(l=>l.length>0); return lines.map(l=>l.split("\t")); }
+    function getCellPosition(input){
+      const tr=input.closest("tr"); const tbody=document.getElementById("mapBody");
+      const rowIndex=Array.from(tbody.rows).indexOf(tr);
+      const cellIndex=Array.from(tr.cells).indexOf(input.closest("td"));
+      return {rowIndex,cellIndex};
+    }
+    function handleGridPaste(e){
+      const txt=(e.clipboardData||window.clipboardData).getData("text");
+      if(!txt || (!txt.includes("\t") && !txt.includes("\n"))) return;
+      e.preventDefault();
+      const data=parseClipboard(txt);
+      const {rowIndex,cellIndex}=getCellPosition(e.target);
+      const tbody=document.getElementById("mapBody");
+      const needed=rowIndex+data.length; ensureRowCount(needed);
+      data.forEach((cols,i)=>{
+        const r=tbody.rows[rowIndex+i];
+        const tInput=r.cells[0].querySelector("input");
+        const wInput=r.cells[1].querySelector("input");
+        const c0=cols[0]??""; const c1=cols[1]??"";
+        if(cellIndex===0){ if(c0!=="") tInput.value=c0; if(c1!=="") wInput.value=c1; }
+        else { if(c0!=="") wInput.value=c0; }
+      });
+    }
+
+    function buildIXF(){
+      const filename=sanitizeFilename(document.getElementById("filename").value);
+      const periodRaw=document.getElementById("couplingPeriod").value;
+      const period=parseInt(periodRaw,10);
+      if(!Number.isFinite(period)||period<1) throw new Error("Coupling Period (Days) must be a positive integer.");
+      const mappings=collectRows();
+      if(mappings.length===0) throw new Error("Add at least one Target ↔ Well mapping.");
+
+      const lines=[];
+      lines.push("START","",
+        "# ---------------------------------------------------------------------------------------------------",
+        "#  Setup actions",
+        "# ---------------------------------------------------------------------------------------------------",
+        "#  Network balancing action","",
+        "CouplingProperties {",
+        "  SolutionMethod=PERIODIC",
+        "  MinNetworkPeriod="+period,
+        "}","",
+        'NetworkBalanceAction "ACT_NET_BAL" {',
+        "    VerbosityLevel=5",
+        '    DefaultCouplingLocation="BOTTOM_HOLE"',
+        "    BoundaryNodesMap=[");
+      mappings.forEach(([target,well])=>{ lines.push(`    NetworkWellBoundary("${escapeQuoted(target)}") Well("${escapeQuoted(well)}")`); });
+      lines.push("                      ]",
+        '    DefaultWellConstraint="OIL_FLOW_RATE"',
+        "    IPRConstraintType=PRESSURE",
+        "}","",
+        "# ---------------------------------------------------------------------------------------------------",
+        "#  Setup strategy",
+        "# ---------------------------------------------------------------------------------------------------",
+        "# Strategy: applies the instruction to test all the wells and applies the guide rate balance action",
+        'CombinedNetworkBalanceAction "CB_NB" {',
+        '	NetworkBalanceActions=[ NetworkBalanceAction("ACT_NET_BAL") ]    ',
+        "}","",
+        'Strategy "STRATEGY_1" {',
+        '    BalancingAction=CombinedNetworkBalanceAction("CB_NB")',
+        "}");
+      return {filename,content:lines.join("\n")};
+    }
+
+    function downloadIXF(filename,content){
+      const blob=new Blob([content],{type:"text/plain;charset=utf-8"});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement("a"); a.href=url;
+      a.download=filename.endsWith(".ixf")?filename:filename+".ixf";
+      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    }
+
+    document.getElementById("addRowBtn").addEventListener("click",()=>addRow());
+    document.getElementById("clearRowsBtn").addEventListener("click",()=>{ document.getElementById("mapBody").innerHTML=""; });
+    document.getElementById("generateBtn").addEventListener("click",()=>{
+      try{ const {filename,content}=buildIXF(); downloadIXF(filename,content); }catch(err){ alert(err.message); }
+    });
+    document.getElementById("previewBtn").addEventListener("click",()=>{
+      const previewCard=document.getElementById("previewCard");
+      const previewBox=document.getElementById("previewBox");
+      try{ const {content}=buildIXF(); previewBox.textContent=content; previewCard.style.display="block"; previewCard.scrollIntoView({behavior:"smooth",block:"start"}); }catch(err){ alert(err.message); }
+    });
+
+    [["Well1","P1"],["Well2","P2"],["Well3","P3"]].forEach(([t,w])=>addRow(t,w));
+  </script>
+</body>
+</html>
