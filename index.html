@@ -13,7 +13,7 @@
       --inset: inset 0 0 0 1px rgba(0,0,0,.03);
       --grid-size:28px;
     }
-    /* DARK (base tokens) */
+    /* Dark theme tokens I use as defaults */
     :root{
       --ink:#e9eef8; --muted:#a9b6cf;
       --bg:#0e1424; --bg-g1: rgba(53,182,255,.08); --bg-g2: rgba(0,94,184,.10);
@@ -27,7 +27,7 @@
       --toggle-track:#16243c; --toggle-thumb:#ffffff; --toggle-icon:#cfe3ff;
       --th-fg:#d9e9ff;
     }
-    /* LIGHT overrides (apply on body attr) */
+    /* Light theme overrides when I set body[data-theme='light'] */
     body[data-theme="light"]{
       --ink:#0b1020; --muted:#5b6473;
       --bg:#f7f9fc; --bg-g1: rgba(0,94,184,.06); --bg-g2: rgba(53,182,255,.06);
@@ -267,7 +267,7 @@
   </main>
 
   <script>
-    // Theme (body attribute only)
+    // Theme toggler — I only touch the body's data-theme
     (function(){
       const body = document.body;
       const btn  = document.getElementById('themeSwitch');
@@ -288,11 +288,11 @@
       btn.addEventListener('click', ()=> setTheme(body.getAttribute('data-theme') === 'light' ? 'dark' : 'light'));
     })();
 
-    // Utils
+    // Helpers I reuse
     function sanitizeFilename(name){ const t=String(name).trim(); const s=t.replace(/[^A-Za-z0-9._-]/g,"_"); return s || "network_config"; }
     function escapeQuoted(str){ return String(str).replace(/\\/g,"\\\\").replace(/"/g,'\\"'); }
 
-    // Table helpers & Excel paste
+    // Table helpers; I support Excel-style paste
     const mapBody = document.getElementById("mapBody");
     function addRow(target="", well=""){
       const tr=document.createElement("tr");
@@ -301,7 +301,7 @@
       const inTarget=document.createElement("input");
       inTarget.type="text"; inTarget.placeholder='Well1'; inTarget.value=target;
       inTarget.addEventListener("paste", handleGridPaste);
-      inTarget.addEventListener("input", refreshPreviewIfVisible); // live preview
+      inTarget.addEventListener("input", refreshPreviewIfVisible);
       tdTarget.appendChild(inTarget);
 
       const tdWell=document.createElement("td");
@@ -319,7 +319,7 @@
 
       tr.append(tdTarget,tdWell,tdAct);
       mapBody.appendChild(tr);
-      refreshPreviewIfVisible(); // reflect new empty row if needed
+      refreshPreviewIfVisible();
       return tr;
     }
     function ensureRowCount(n){ while(mapBody.rows.length<n) addRow(); }
@@ -355,10 +355,10 @@
         if(cellIndex===0){ if(c0!=="") tInput.value=c0; if(c1!=="") wInput.value=c1; }
         else { if(c0!=="") wInput.value=c0; }
       });
-      refreshPreviewIfVisible(); // reflect pasted values
+      refreshPreviewIfVisible();
     }
 
-    // Auto-map behavior
+    // Auto-map behavior — when enabled I lock the manual row controls
     const autoMap = document.getElementById('autoMap');
     const addRowBtn = document.getElementById('addRowBtn');
     const clearRowsBtn = document.getElementById('clearRowsBtn');
@@ -371,7 +371,7 @@
     }
     autoMap.addEventListener('change', (e)=> setAutoMapState(e.target.checked));
 
-    // IXF builder
+    // I assemble the IXF text here
     function buildIXF(){
       const filename=sanitizeFilename(document.getElementById("filename").value);
       const period=parseInt(document.getElementById("couplingPeriod").value,10);
@@ -422,7 +422,7 @@
       return {filename,content:lines.join("\n")};
     }
 
-    // Download & Preview
+    // Preview and download handlers
     const previewCard=document.getElementById("previewCard");
     const previewBox=document.getElementById("previewBox");
     const previewToggleBtn=document.getElementById("previewToggleBtn");
@@ -438,7 +438,7 @@
     }
     function refreshPreviewIfVisible(){
       if(!previewVisible) return;
-      setPreview(true); // rebuild content
+      setPreview(true);
     }
 
     document.getElementById("couplingPeriod").addEventListener("input", refreshPreviewIfVisible);
@@ -453,7 +453,7 @@
     });
     previewToggleBtn.addEventListener("click", ()=> setPreview(!previewVisible));
 
-    // Seed demo rows
+    // I seed a few demo rows
     [["Well1","P1"],["Well2","P2"],["Well3","P3"]].forEach(([t,w])=>addRow(t,w));
   </script>
 </body>
