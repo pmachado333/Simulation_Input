@@ -1,3 +1,4 @@
+<!-- /index.html -->
 <!-- Simulation Input -->
 <!DOCTYPE html>
 <html lang="en">
@@ -13,7 +14,6 @@
       --inset: inset 0 0 0 1px rgba(0,0,0,.03);
       --grid-size:28px;
     }
-    /* Dark theme tokens I use as defaults */
     :root{
       --ink:#e9eef8; --muted:#a9b6cf;
       --bg:#0e1424; --bg-g1: rgba(53,182,255,.08); --bg-g2: rgba(0,94,184,.10);
@@ -27,7 +27,6 @@
       --toggle-track:#16243c; --toggle-thumb:#ffffff; --toggle-icon:#cfe3ff;
       --th-fg:#d9e9ff;
     }
-    /* Light theme overrides when I set body[data-theme='light'] */
     body[data-theme="light"]{
       --ink:#0b1020; --muted:#5b6473;
       --bg:#f7f9fc; --bg-g1: rgba(0,94,184,.06); --bg-g2: rgba(53,182,255,.06);
@@ -38,7 +37,6 @@
       --pill-bg:#eaf3ff;
       --preview-bg:#ffffff; --preview-fg:#1f2937;
       --btn-bg:#ffffff; --btn-bg-hover:#f1f5fb;
-      --toggle-track:#e8eef8; --toggle-thumb:#ffffff; --toggle-icon:#1f3d77;
       --shadow:0 8px 20px rgba(15, 23, 42, .08);
       --inset: inset 0 0 0 1px rgba(0,0,0,.03);
       --th-fg:#1e293b;
@@ -91,9 +89,11 @@
     h2{margin:0 0 10px}
     p.desc{color:var(--muted);margin:0 0 16px}
 
+    /* FIX: keep all controls inside the card width */
     .control-bar{
       display:grid; gap:24px; margin:12px 0 0;
-      grid-template-columns: 520px 320px; align-items:start; width:max-content;
+      grid-template-columns: minmax(0,1.2fr) minmax(0,1fr) minmax(0,1fr);
+      align-items:start; width:100%;
     }
     .field{display:flex; flex-direction:column}
     .label{font-weight:750; font-size:.96rem; margin-bottom:6px; white-space:nowrap;}
@@ -118,8 +118,10 @@
     body[data-theme="light"] .group input::placeholder{color:#94a3b8}
     .group:focus-within{ box-shadow:0 0 0 3px rgba(53,182,255,.2), var(--inset); border-color:rgba(53,182,255,.4); }
 
-    .filename .group{ width: clamp(320px, 66%, 360px); }
-    .period   .group{ width:220px; }
+    /* Make inputs respect grid and stay inside card */
+    .filename .group,
+    .period .group,
+    .tolerance .group{ width:100%; }
 
     .helper{ color:var(--muted); margin-top:8px; line-height:1.6; }
     .period .helper{ width:100%; max-width:none; }
@@ -155,7 +157,8 @@
     @media (max-width: 920px){
       .control-bar{ grid-template-columns: 1fr; width:100%; }
       .filename .group{ width:100%; }
-      .period .group{ width:260px; }
+      .period .group{ width:100%; }
+      .tolerance .group{ width:100%; }
     }
   </style>
 </head>
@@ -183,7 +186,7 @@
   <main>
     <section class="card" aria-label="Simulation Input Form">
       <h2>Configuration</h2>
-      <p class="desc">Set filename and coupling period, choose mapping mode, then generate your <span class="pill">.ixf</span> file.</p>
+      <p class="desc">Set filename, coupling period and tolerance, choose mapping mode, then generate your <span class="pill">.ixf</span> file.</p>
 
       <div class="control-bar">
         <div class="field filename">
@@ -212,10 +215,28 @@
                 <path d="M12 7v6l4 2" stroke="currentColor"/>
               </svg>
             </div>
-            <input id="couplingPeriod" type="number" min="1" step="1" value="60" inputmode="numeric" pattern="[0-9]*" aria-describedby="periodHelp" />
+            <input id="couplingPeriod" type="number" min="1" step="1" value="120" inputmode="numeric" pattern="[0-9]*" aria-describedby="periodHelp" />
           </div>
           <div id="periodHelp" class="helper">
             Specifies the minimum time period between two consecutive network solves, starting at (local) time zero for each reservoir interacting with the network
+          </div>
+        </div>
+
+        <div class="field tolerance">
+          <div class="label">Tolerance (%)</div>
+          <div class="group">
+            <div class="addon" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M5 19L19 5" stroke="currentColor"/>
+                <circle cx="7" cy="7" r="2.5" stroke="currentColor"/>
+                <circle cx="17" cy="17" r="2.5" stroke="currentColor"/>
+              </svg>
+            </div>
+            <input id="tolerancePercent" type="number" min="1" max="15" step="0.1" value="5" inputmode="decimal" aria-describedby="toleranceHelp" />
+            <div class="suffix">%</div>
+          </div>
+          <div id="toleranceHelp" class="helper">
+            This option defines the solution tolerance for the networksolver
           </div>
         </div>
       </div>
@@ -267,12 +288,11 @@
   </main>
 
   <script>
-    // Theme toggler — I only touch the body's data-theme
+    // Theme toggler
     (function(){
       const body = document.body;
       const btn  = document.getElementById('themeSwitch');
       const label= document.getElementById('themeLabel');
-
       function setTheme(theme){
         body.setAttribute('data-theme', theme);
         btn.setAttribute('aria-checked', theme === 'light' ? 'true' : 'false');
@@ -288,11 +308,11 @@
       btn.addEventListener('click', ()=> setTheme(body.getAttribute('data-theme') === 'light' ? 'dark' : 'light'));
     })();
 
-    // Helpers I reuse
+    // Helpers
     function sanitizeFilename(name){ const t=String(name).trim(); const s=t.replace(/[^A-Za-z0-9._-]/g,"_"); return s || "network_config"; }
     function escapeQuoted(str){ return String(str).replace(/\\/g,"\\\\").replace(/"/g,'\\"'); }
 
-    // Table helpers; I support Excel-style paste
+    // Table helpers
     const mapBody = document.getElementById("mapBody");
     function addRow(target="", well=""){
       const tr=document.createElement("tr");
@@ -358,7 +378,7 @@
       refreshPreviewIfVisible();
     }
 
-    // Auto-map behavior — when enabled I lock the manual row controls
+    // Auto-map behavior
     const autoMap = document.getElementById('autoMap');
     const addRowBtn = document.getElementById('addRowBtn');
     const clearRowsBtn = document.getElementById('clearRowsBtn');
@@ -371,19 +391,25 @@
     }
     autoMap.addEventListener('change', (e)=> setAutoMapState(e.target.checked));
 
-    // I assemble the IXF text here
+    // Build IXF
     function buildIXF(){
       const filename=sanitizeFilename(document.getElementById("filename").value);
       const period=parseInt(document.getElementById("couplingPeriod").value,10);
+      const tolPctRaw = parseFloat(document.getElementById("tolerancePercent").value);
       const auto = autoMap.checked;
 
       if(!Number.isFinite(period)||period<1) throw new Error("Coupling Period (Days) must be a positive integer.");
+      if(!Number.isFinite(tolPctRaw)||tolPctRaw<1||tolPctRaw>15) throw new Error("Tolerance (%) must be between 1 and 15.");
+
+      // Why: file expects fraction (e.g., 5% -> 0.05)
+      const tolFraction = Math.round((tolPctRaw/100) * 1e6) / 1e6;
 
       const mappings = collectRows();
       if(!auto && mappings.length===0) throw new Error("Add at least one Target ↔ Well mapping or enable Automatic Map Boundary Nodes.");
 
       const lines=[];
-      lines.push("START","",
+      lines.push(
+        "START","",
         "# ---------------------------------------------------------------------------------------------------",
         "#  Setup actions",
         "# ---------------------------------------------------------------------------------------------------",
@@ -391,10 +417,20 @@
         "CouplingProperties {",
         "  SolutionMethod=PERIODIC",
         "  MinNetworkPeriod="+period,
-        "}","",
+        "}",
+        "",
+        "Network {",
+        "  VerbosityLevel=5",
+        "  NetworkSettings {",
+        "    Tolerance="+tolFraction,
+        "    MaxIters=50",
+        "  }",
+        "}",
+        "",
         'NetworkBalanceAction "ACT_NET_BAL" {',
         "    VerbosityLevel=5",
-        '    DefaultCouplingLocation="BOTTOM_HOLE"');
+        '    DefaultCouplingLocation="BOTTOM_HOLE"'
+      );
 
       if(auto){
         lines.push("    automatically_map_boundary_nodes()");
@@ -406,19 +442,23 @@
         lines.push("                      ]");
       }
 
-      lines.push('    DefaultWellConstraint="OIL_FLOW_RATE"',
-                  "    IPRConstraintType=PRESSURE",
-                  "}","",
-                  "# ---------------------------------------------------------------------------------------------------",
-                  "#  Setup strategy",
-                  "# ---------------------------------------------------------------------------------------------------",
-                  "# Strategy: applies the instruction to test all the wells and applies the guide rate balance action",
-                  'CombinedNetworkBalanceAction "CB_NB" {',
-                  '	NetworkBalanceActions=[ NetworkBalanceAction("ACT_NET_BAL") ]    ',
-                  "}","",
-                  'Strategy "STRATEGY_1" {',
-                  '    BalancingAction=CombinedNetworkBalanceAction("CB_NB")',
-                  "}");
+      lines.push(
+        '    DefaultWellConstraint="OIL_FLOW_RATE"',
+        "    IPRConstraintType=PRESSURE",
+        "}",
+        "",
+        "# ---------------------------------------------------------------------------------------------------",
+        "#  Setup strategy",
+        "# ---------------------------------------------------------------------------------------------------",
+        "# Strategy: applies the instruction to test all the wells and applies the guide rate balance action",
+        'CombinedNetworkBalanceAction "CB_NB" {',
+        '	NetworkBalanceActions=[ NetworkBalanceAction("ACT_NET_BAL") ]    ',
+        "}",
+        "",
+        'Strategy "STRATEGY_1" {',
+        '    BalancingAction=CombinedNetworkBalanceAction("CB_NB")',
+        "}"
+      );
       return {filename,content:lines.join("\n")};
     }
 
@@ -442,18 +482,22 @@
     }
 
     document.getElementById("couplingPeriod").addEventListener("input", refreshPreviewIfVisible);
+    document.getElementById("tolerancePercent").addEventListener("input", refreshPreviewIfVisible);
 
     document.getElementById("addRowBtn").addEventListener("click", ()=> addRow());
     document.getElementById("clearRowsBtn").addEventListener("click", ()=>{ mapBody.innerHTML=""; refreshPreviewIfVisible(); });
     document.getElementById("generateBtn").addEventListener("click", ()=>{
-      try{ const {filename,content}=buildIXF(); const blob=new Blob([content],{type:"text/plain;charset=utf-8"});
-        const url=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url;
+      try{
+        const {filename,content}=buildIXF();
+        const blob=new Blob([content],{type:"text/plain;charset=utf-8"});
+        const url=URL.createObjectURL(blob);
+        const a=document.createElement("a"); a.href=url;
         a.download=filename.endsWith(".ixf")?filename:filename+".ixf"; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
       }catch(err){ alert(err.message); }
     });
     previewToggleBtn.addEventListener("click", ()=> setPreview(!previewVisible));
 
-    // I seed a few demo rows
+    // Seed demo rows
     [["Well1","P1"],["Well2","P2"],["Well3","P3"]].forEach(([t,w])=>addRow(t,w));
   </script>
 </body>
