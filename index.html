@@ -88,7 +88,6 @@
     h2{margin:0 0 10px}
     p.desc{color:var(--muted);margin:0 0 16px}
 
-    /* FIX: keep all controls inside the card width */
     .control-bar{
       display:grid; gap:24px; margin:12px 0 0;
       grid-template-columns: minmax(0,1.2fr) minmax(0,1fr) minmax(0,1fr);
@@ -117,7 +116,6 @@
     body[data-theme="light"] .group input::placeholder{color:#94a3b8}
     .group:focus-within{ box-shadow:0 0 0 3px rgba(53,182,255,.2), var(--inset); border-color:rgba(53,182,255,.4); }
 
-    /* Make inputs respect grid and stay inside card */
     .filename .group,
     .period .group,
     .tolerance .group{ width:100%; }
@@ -125,11 +123,11 @@
     .helper{ color:var(--muted); margin-top:8px; line-height:1.6; }
     .period .helper{ width:100%; max-width:none; }
 
-    .auto-map{
+    .auto-map, .min-rate{
       margin-top:16px; padding:12px; border:1px dashed var(--line); border-radius:12px; background:var(--surface-2);
     }
-    .auto-map label{ display:flex; align-items:center; gap:10px; font-weight:700; }
-    .auto-map input[type="checkbox"]{ width:18px; height:18px; }
+    .auto-map label, .min-rate label{ display:flex; align-items:center; gap:10px; font-weight:700; }
+    .auto-map input[type="checkbox"], .min-rate input[type="checkbox"]{ width:18px; height:18px; }
 
     .table-wrap{overflow:auto; border:1px solid var(--line); border-radius:12px; background:var(--surface-2); margin-top:10px}
     table{width:100%; border-collapse:collapse}
@@ -240,6 +238,24 @@
         </div>
       </div>
 
+      <!-- Moved Min Well Rate ABOVE Auto Map -->
+      <div class="min-rate">
+        <div class="label">Min Well Rate (bbl/day)</div>
+        <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+          <label for="minRateEnabled">
+            <input id="minRateEnabled" type="checkbox" checked />
+            Enable shut-in for low oil rate
+          </label>
+          <div class="group" style="max-width:220px;">
+            <input id="minRateValue" type="number" min="0" step="1" value="100" inputmode="numeric" aria-describedby="minRateHelp" />
+            <div class="suffix">bbl/day</div>
+          </div>
+        </div>
+        <div id="minRateHelp" class="helper">
+          If enabled, wells with <strong>OIL_PRODUCTION_RATE</strong> lower than this threshold are shut-in at <strong>END_TIMESTEP</strong>.
+        </div>
+      </div>
+
       <div class="auto-map">
         <label for="autoMap">
           <input id="autoMap" type="checkbox" />
@@ -262,7 +278,7 @@
               <tr>
                 <th>Well Target Name</th>
                 <th>Well Name</th>
-                <th style="width:1%">Actions</th>
+                <th style="width:1%)">Actions</th>
               </tr>
             </thead>
             <tbody id="mapBody"></tbody>
@@ -287,7 +303,6 @@
   </main>
 
   <script>
-    // Theme toggler
     (function(){
       const body = document.body;
       const btn  = document.getElementById('themeSwitch');
@@ -307,11 +322,9 @@
       btn.addEventListener('click', ()=> setTheme(body.getAttribute('data-theme') === 'light' ? 'dark' : 'light'));
     })();
 
-    // Helpers
     function sanitizeFilename(name){ const t=String(name).trim(); const s=t.replace(/[^A-Za-z0-9._-]/g,"_"); return s || "network_config"; }
     function escapeQuoted(str){ return String(str).replace(/\\/g,"\\\\").replace(/"/g,'\\"'); }
 
-    // Table helpers
     const mapBody = document.getElementById("mapBody");
     function addRow(target="", well=""){
       const tr=document.createElement("tr");
@@ -377,7 +390,6 @@
       refreshPreviewIfVisible();
     }
 
-    // Auto-map behavior
     const autoMap = document.getElementById('autoMap');
     const addRowBtn = document.getElementById('addRowBtn');
     const clearRowsBtn = document.getElementById('clearRowsBtn');
@@ -390,7 +402,15 @@
     }
     autoMap.addEventListener('change', (e)=> setAutoMapState(e.target.checked));
 
-    // Build IXF
+    const minRateEnabledEl = document.getElementById('minRateEnabled');
+    const minRateValueEl = document.getElementById('minRateValue');
+    function setMinRateState(enabled){
+      minRateValueEl.disabled = !enabled; // keep output identical when disabled
+      refreshPreviewIfVisible();
+    }
+    minRateEnabledEl.addEventListener('change', (e)=> setMinRateState(e.target.checked));
+    minRateValueEl.addEventListener('input', refreshPreviewIfVisible);
+
     function buildIXF(){
       const filename=sanitizeFilename(document.getElementById("filename").value);
       const period=parseInt(document.getElementById("couplingPeriod").value,10);
@@ -400,7 +420,6 @@
       if(!Number.isFinite(period)||period<1) throw new Error("Coupling Period (Days) must be a positive integer.");
       if(!Number.isFinite(tolPctRaw)||tolPctRaw<1||tolPctRaw>15) throw new Error("Tolerance (%) must be between 1 and 15.");
 
-      // Why: file expects fraction (e.g., 5% -> 0.05)
       const tolFraction = Math.round((tolPctRaw/100) * 1e6) / 1e6;
 
       const mappings = collectRows();
@@ -445,7 +464,46 @@
         '    DefaultWellConstraint="OIL_FLOW_RATE"',
         "    IPRConstraintType=PRESSURE",
         "}",
-        "",
+        ""
+      );
+
+      const minRateEnabled = minRateEnabledEl.checked;
+      if(minRateEnabled){
+        const minRateRaw = parseFloat(minRateValueEl.value);
+        if(!Number.isFinite(minRateRaw)) throw new Error("Minimum Well Rate must be a number.");
+        const minRate = Math.round(minRateRaw * 1000) / 1000;
+
+        lines.push(
+          "# --- pick your shut-in threshold (example uses 100 STB/d) ---",
+          'DynamicList "BelowMinOilRate" {',
+          '  InitialList    = Group("FM_FIELD")',
+          "  EntityLevel    = WELL",
+          "  SelectionCriteria = [",
+          `   \"(Status == OPEN) & (Type == PRODUCER) & (OIL_PRODUCTION_RATE < ${minRate})\"`,
+          "  ]",
+          "}",
+          "",
+          "# Close all wells in the dynamic list above",
+          'CloseWellAction "ShutLowRate" {',
+          "  WellList = DynamicList('BelowMinOilRate')",
+          " # (optional) ClosureReason = ECONOMIC",
+          "}",
+          "",
+          "# Run the close action each timestep (after the step finishes)",
+          'Instruction "ShutWellsBelowMinRate" {',
+          "  Actions = [ CloseWellAction('ShutLowRate') ]",
+          "  ExecutionPosition = END_TIMESTEP",
+          "}",
+          "",
+          "# Add instruction to a strategy (or add to your existing strategy)",
+          'Strategy "AutoShutLowRate" {',
+          "  Instructions = [ Instruction('ShutWellsBelowMinRate') ]",
+          "}",
+          ""
+        );
+      }
+
+      lines.push(
         "# ---------------------------------------------------------------------------------------------------",
         "#  Setup strategy",
         "# ---------------------------------------------------------------------------------------------------",
@@ -461,7 +519,6 @@
       return {filename,content:lines.join("\n")};
     }
 
-    // Preview and download handlers
     const previewCard=document.getElementById("previewCard");
     const previewBox=document.getElementById("previewBox");
     const previewToggleBtn=document.getElementById("previewToggleBtn");
@@ -496,8 +553,10 @@
     });
     previewToggleBtn.addEventListener("click", ()=> setPreview(!previewVisible));
 
-    // Seed demo rows
     [["Well1","P1"],["Well2","P2"],["Well3","P3"]].forEach(([t,w])=>addRow(t,w));
+
+    setAutoMapState(autoMap.checked);
+    setMinRateState(minRateEnabledEl.checked);
   </script>
 </body>
 </html>
