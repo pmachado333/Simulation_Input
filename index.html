@@ -156,6 +156,27 @@
       .period .group{ width:100%; }
       .tolerance .group{ width:100%; }
     }
+
+    /* New merged container */
+    .field-management{
+      margin-top:16px; padding:12px; border:1px dashed var(--line); border-radius:12px; background:var(--surface-2);
+    }
+    .field-management .section-title{
+      font-weight:800; margin:0 0 6px; font-size:1rem;
+    }
+    .field-management .section-description{
+      margin:0 0 10px; color:var(--muted);
+    }
+    .field-management .min-rate,
+    .field-management .field-constraints{
+      margin-top:12px; padding:0; border:none; background:transparent;
+    }
+    .field-management .min-rate .label,
+    .field-management .field-constraints .label{
+      margin-bottom:8px;
+    }
+    /* Triple the space after the shut-in helper before Field Constraints */
+    .field-management .min-rate .helper{ margin-bottom:36px; }
   </style>
 </head>
 <body data-theme="light">
@@ -237,51 +258,62 @@
         </div>
       </div>
 
-      <!-- Min Well Rate -->
-      <div class="min-rate">
-        <div class="label">Min Well Rate (bbl/day)</div>
-        <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
-          <label for="minRateEnabled">
-            <input id="minRateEnabled" type="checkbox" checked />
-            Enable shut-in for low oil rate
-          </label>
-          <div class="group" style="max-width:220px;">
-            <input id="minRateValue" type="number" min="0" step="1" value="100" inputmode="numeric" aria-describedby="minRateHelp" />
-            <div class="suffix">bbl/day</div>
-          </div>
-        </div>
-        <div id="minRateHelp" class="helper">
-          If enabled, wells with <strong>OIL_PRODUCTION_RATE</strong> lower than this threshold are shut-in at <strong>END_TIMESTEP</strong>.
-        </div>
-      </div>
+      <!-- Field Management (merged UI only) -->
+      <div class="field-management">
+        <div class="section-title">Field Management</div>
+        <p class="section-description">
+          Define field‑wide rate controls used by IXFM rate‑balance actions.
+          Configure a shut‑in threshold for low‑rate producers and optional field ceiling rates (LIQUID, OIL, and/or GAS).
+          These settings guide how the network balance respects production limits at both well and field levels.
+        </p>
 
-      <!-- Field Constraints -->
-      <div class="field-constraints">
-        <div class="label">Field Constraints</div>
-        <div class="helper" style="margin-bottom:8px;">
-          Select either <strong>Liquid</strong> or <strong>Oil</strong> (or none). Gas is optional and can be combined.
-        </div>
-        <div style="display:flex; gap:18px; align-items:center; flex-wrap:wrap;">
-          <label for="fcLiquidEnabled"><input id="fcLiquidEnabled" type="checkbox" /> Liquid Rate (STB/d)</label>
-          <div class="group" style="max-width:220px;">
-            <input id="fcLiquidValue" type="number" min="0" step="1" placeholder="e.g., 120000" inputmode="numeric" disabled />
-            <div class="suffix">STB/d</div>
+        <!-- Min Rate (title removed by request) -->
+        <div class="min-rate">
+          <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+            <label for="minRateEnabled">
+              <input id="minRateEnabled" type="checkbox" checked />
+              Well Shut‑in Oil Rate
+            </label>
+            <div class="group" style="max-width:220px;">
+              <input id="minRateValue" type="number" min="0" step="1" value="100" inputmode="numeric" aria-describedby="minRateHelp" />
+              <div class="suffix">bbl/day</div>
+            </div>
           </div>
-
-          <label for="fcOilEnabled" style="margin-left:8px;"><input id="fcOilEnabled" type="checkbox" /> Oil Rate (STB/d)</label>
-          <div class="group" style="max-width:220px;">
-            <input id="fcOilValue" type="number" min="0" step="1" placeholder="e.g., 120000" inputmode="numeric" disabled />
-            <div class="suffix">STB/d</div>
-          </div>
-
-          <label for="fcGasEnabled" style="margin-left:8px;"><input id="fcGasEnabled" type="checkbox" /> Gas Rate (MSCF/d)</label>
-          <div class="group" style="max-width:220px;">
-            <input id="fcGasValue" type="number" min="0" step="1" placeholder="e.g., 282517" inputmode="numeric" disabled />
-            <div class="suffix">MSCF/d</div>
+          <div id="minRateHelp" class="helper">
+            If enabled, wells with <strong>OIL_PRODUCTION_RATE</strong> lower than this threshold are shut‑in.
           </div>
         </div>
-        <div class="helper">
-          When any constraint is selected, the IXF will add a <code>GuideRateBalanceAction "FM_FIELD_OG_LIMIT"</code> with the chosen limits and reference it in <code>CombinedNetworkBalanceAction</code>.
+
+        <!-- Field Constraints -->
+        <div class="field-constraints">
+          <div class="label">Field Constraints</div>
+          <div class="helper" style="margin-bottom:8px;">
+            Select either <strong>Liquid</strong> or <strong>Oil</strong> (or none). Gas is optional and can be combined.
+          </div>
+          <div style="display:flex; gap:18px; align-items:center; flex-wrap:wrap;">
+            <label for="fcLiquidEnabled"><input id="fcLiquidEnabled" type="checkbox" /> Liquid Rate (STB/d)</label>
+            <div class="group" style="max-width:220px;">
+              <input id="fcLiquidValue" type="number" min="0" step="1" placeholder="RATE VALUE" inputmode="numeric" disabled />
+              <div class="suffix">STB/d</div>
+            </div>
+
+            <label for="fcOilEnabled" style="margin-left:8px;"><input id="fcOilEnabled" type="checkbox" /> Oil Rate (STB/d)</label>
+            <div class="group" style="max-width:220px;">
+              <input id="fcOilValue" type="number" min="0" step="1" placeholder="RATE VALUE" inputmode="numeric" disabled />
+              <div class="suffix">STB/d</div>
+            </div>
+
+            <label for="fcGasEnabled" style="margin-left:8px;"><input id="fcGasEnabled" type="checkbox" /> Gas Rate (MSCF/d)</label>
+            <div class="group" style="max-width:220px;">
+              <input id="fcGasValue" type="number" min="0" step="1" placeholder="RATE VALUE" inputmode="numeric" disabled />
+              <div class="suffix">MSCF/d</div>
+            </div>
+          </div>
+          <div class="helper">
+            Set the maximum allowable production rates for the entire field. Selected limits are applied through
+            <code>GuideRateBalanceAction "FM_FIELD_OG_LIMIT"</code> and referenced by the
+            <code>CombinedNetworkBalanceAction</code>, ensuring total field production does not exceed the specified ceilings.
+          </div>
         </div>
       </div>
 
@@ -352,7 +384,7 @@
     })();
 
     function sanitizeFilename(name){ const t=String(name).trim(); const s=t.replace(/[^A-Za-z0-9._-]/g,"_"); return s || "network_config"; }
-    function escapeQuoted(str){ return String(str).replace(/\\\\/g,"\\\\\\\\").replace(/"/g,'\\\\\\"'); }
+    function escapeQuoted(str){ return String(str).replace(/\\/g,"\\\\").replace(/"/g,'\\\"'); }
 
     const mapBody = document.getElementById("mapBody");
     function addRow(target="", well=""){
@@ -434,7 +466,7 @@
     const minRateEnabledEl = document.getElementById('minRateEnabled');
     const minRateValueEl = document.getElementById('minRateValue');
     function setMinRateState(enabled){
-      minRateValueEl.disabled = !enabled; // keep output identical when disabled
+      minRateValueEl.disabled = !enabled;
       refreshPreviewIfVisible();
     }
     minRateEnabledEl.addEventListener('change', (e)=> setMinRateState(e.target.checked));
@@ -477,7 +509,7 @@
       const tolFraction = Math.round((tolPctRaw/100) * 1e6) / 1e6;
 
       const mappings = collectRows();
-      if(!auto && mappings.length===0) throw new Error("Add at least one Target ↔ Well mapping or enable Automatic Map Boundary Nodes.");
+      if(!auto && mappings.length===0) throw new Error("Add at least one Target \u2194 Well mapping or enable Automatic Map Boundary Nodes.");
 
       const lines=[];
       lines.push(
@@ -611,9 +643,9 @@
         "# Strategy: applies the instruction to test all the wells and applies the guide rate balance action",
         'CombinedNetworkBalanceAction "CB_NB" {'
       );
-      lines.push('	NetworkBalanceActions=[ NetworkBalanceAction("ACT_NET_BAL") ]    ');
+      lines.push('\tNetworkBalanceActions=[ NetworkBalanceAction("ACT_NET_BAL") ]    ');
       if(hasConstraints){
-        lines.push('	AllocationActions=[GuideRateBalanceAction("FM_FIELD_OG_LIMIT")]');
+        lines.push('\tAllocationActions=[GuideRateBalanceAction("FM_FIELD_OG_LIMIT")]');
       }
       lines.push(
         "}",
@@ -622,7 +654,7 @@
         '    BalancingAction=CombinedNetworkBalanceAction("CB_NB")',
         "}"
       );
-      return {filename,content:lines.join("\n")};
+      return {filename,content:lines.join("\r\n")};
     }
 
     const previewCard=document.getElementById("previewCard");
@@ -654,7 +686,8 @@
         const blob=new Blob([content],{type:"text/plain;charset=utf-8"});
         const url=URL.createObjectURL(blob);
         const a=document.createElement("a"); a.href=url;
-        a.download=filename.endsWith(".ixf")?filename:filename+".ixf"; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+        const safe = filename.endsWith(".ixf")?filename:filename+".ixf";
+        a.download=safe; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
       }catch(err){ alert(err.message); }
     });
     previewToggleBtn.addEventListener("click", ()=> setPreview(!previewVisible));
