@@ -234,9 +234,7 @@
             </div>
             <input id="couplingPeriod" type="number" min="1" step="1" value="120" inputmode="numeric" pattern="[0-9]*" aria-describedby="periodHelp" />
           </div>
-          <div id="periodHelp" class="helper">
-            Specifies the minimum time period between two consecutive network solves, starting at (local) time zero for each reservoir interacting with the network
-          </div>
+          <div id="periodHelp" class="helper"> Specifies the minimum time period between two consecutive network solves </div>
         </div>
 
         <div class="field tolerance">
@@ -262,9 +260,7 @@
       <div class="field-management">
         <div class="section-title">Field Management</div>
         <p class="section-description">
-          Define field‑wide rate controls used by IXFM rate‑balance actions.
-          Configure a shut‑in threshold for low‑rate producers and optional field ceiling rates (LIQUID, OIL, and/or GAS).
-          These settings guide how the network balance respects production limits at both well and field levels.
+          Set a shut‑in threshold and field ceilings (LIQUID, OIL, GAS). IXFM rate‑balance actions enforce these limits.
         </p>
 
         <!-- Min Rate (title removed by request) -->
@@ -288,7 +284,7 @@
         <div class="field-constraints">
           <div class="label">Field Constraints</div>
           <div class="helper" style="margin-bottom:8px;">
-            Select either <strong>Liquid</strong> or <strong>Oil</strong> (or none). Gas is optional and can be combined.
+            Set the maximum allowable production rates for the entire field.
           </div>
           <div style="display:flex; gap:18px; align-items:center; flex-wrap:wrap;">
             <label for="fcLiquidEnabled"><input id="fcLiquidEnabled" type="checkbox" /> Liquid Rate (STB/d)</label>
@@ -309,11 +305,7 @@
               <div class="suffix">MSCF/d</div>
             </div>
           </div>
-          <div class="helper">
-            Set the maximum allowable production rates for the entire field. Selected limits are applied through
-            <code>GuideRateBalanceAction "FM_FIELD_OG_LIMIT"</code> and referenced by the
-            <code>CombinedNetworkBalanceAction</code>, ensuring total field production does not exceed the specified ceilings.
-          </div>
+          
         </div>
       </div>
 
