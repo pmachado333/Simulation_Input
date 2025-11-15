@@ -1,4 +1,3 @@
-<!-- Simulation Input -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -123,11 +122,11 @@
     .helper{ color:var(--muted); margin-top:8px; line-height:1.6; }
     .period .helper{ width:100%; max-width:none; }
 
-    .auto-map, .min-rate{
+    .auto-map, .min-rate, .field-constraints{
       margin-top:16px; padding:12px; border:1px dashed var(--line); border-radius:12px; background:var(--surface-2);
     }
-    .auto-map label, .min-rate label{ display:flex; align-items:center; gap:10px; font-weight:700; }
-    .auto-map input[type="checkbox"], .min-rate input[type="checkbox"]{ width:18px; height:18px; }
+    .auto-map label, .min-rate label, .field-constraints label{ display:flex; align-items:center; gap:10px; font-weight:700; }
+    .auto-map input[type="checkbox"], .min-rate input[type="checkbox"], .field-constraints input[type="checkbox"]{ width:18px; height:18px; }
 
     .table-wrap{overflow:auto; border:1px solid var(--line); border-radius:12px; background:var(--surface-2); margin-top:10px}
     table{width:100%; border-collapse:collapse}
@@ -238,7 +237,7 @@
         </div>
       </div>
 
-      <!-- Moved Min Well Rate ABOVE Auto Map -->
+      <!-- Min Well Rate -->
       <div class="min-rate">
         <div class="label">Min Well Rate (bbl/day)</div>
         <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
@@ -253,6 +252,36 @@
         </div>
         <div id="minRateHelp" class="helper">
           If enabled, wells with <strong>OIL_PRODUCTION_RATE</strong> lower than this threshold are shut-in at <strong>END_TIMESTEP</strong>.
+        </div>
+      </div>
+
+      <!-- Field Constraints -->
+      <div class="field-constraints">
+        <div class="label">Field Constraints</div>
+        <div class="helper" style="margin-bottom:8px;">
+          Select either <strong>Liquid</strong> or <strong>Oil</strong> (or none). Gas is optional and can be combined.
+        </div>
+        <div style="display:flex; gap:18px; align-items:center; flex-wrap:wrap;">
+          <label for="fcLiquidEnabled"><input id="fcLiquidEnabled" type="checkbox" /> Liquid Rate (STB/d)</label>
+          <div class="group" style="max-width:220px;">
+            <input id="fcLiquidValue" type="number" min="0" step="1" placeholder="e.g., 120000" inputmode="numeric" disabled />
+            <div class="suffix">STB/d</div>
+          </div>
+
+          <label for="fcOilEnabled" style="margin-left:8px;"><input id="fcOilEnabled" type="checkbox" /> Oil Rate (STB/d)</label>
+          <div class="group" style="max-width:220px;">
+            <input id="fcOilValue" type="number" min="0" step="1" placeholder="e.g., 120000" inputmode="numeric" disabled />
+            <div class="suffix">STB/d</div>
+          </div>
+
+          <label for="fcGasEnabled" style="margin-left:8px;"><input id="fcGasEnabled" type="checkbox" /> Gas Rate (MSCF/d)</label>
+          <div class="group" style="max-width:220px;">
+            <input id="fcGasValue" type="number" min="0" step="1" placeholder="e.g., 282517" inputmode="numeric" disabled />
+            <div class="suffix">MSCF/d</div>
+          </div>
+        </div>
+        <div class="helper">
+          When any constraint is selected, the IXF will add a <code>GuideRateBalanceAction "FM_FIELD_OG_LIMIT"</code> with the chosen limits and reference it in <code>CombinedNetworkBalanceAction</code>.
         </div>
       </div>
 
@@ -323,7 +352,7 @@
     })();
 
     function sanitizeFilename(name){ const t=String(name).trim(); const s=t.replace(/[^A-Za-z0-9._-]/g,"_"); return s || "network_config"; }
-    function escapeQuoted(str){ return String(str).replace(/\\/g,"\\\\").replace(/"/g,'\\"'); }
+    function escapeQuoted(str){ return String(str).replace(/\\\\/g,"\\\\\\\\").replace(/"/g,'\\\\\\"'); }
 
     const mapBody = document.getElementById("mapBody");
     function addRow(target="", well=""){
@@ -410,6 +439,31 @@
     }
     minRateEnabledEl.addEventListener('change', (e)=> setMinRateState(e.target.checked));
     minRateValueEl.addEventListener('input', refreshPreviewIfVisible);
+
+    // --- Field Constraints wiring ---
+    const fcLiquidEnabled = document.getElementById('fcLiquidEnabled');
+    const fcLiquidValue   = document.getElementById('fcLiquidValue');
+    const fcOilEnabled    = document.getElementById('fcOilEnabled');
+    const fcOilValue      = document.getElementById('fcOilValue');
+    const fcGasEnabled    = document.getElementById('fcGasEnabled');
+    const fcGasValue      = document.getElementById('fcGasValue');
+
+    function updateFcStates(){
+      // enforce mutual exclusivity for Liquid/Oil
+      if(fcLiquidEnabled.checked){ fcOilEnabled.checked = false; fcOilValue.disabled = true; }
+      if(fcOilEnabled.checked){ fcLiquidEnabled.checked = false; fcLiquidValue.disabled = true; }
+      fcLiquidValue.disabled = !fcLiquidEnabled.checked;
+      fcOilValue.disabled    = !fcOilEnabled.checked;
+      fcGasValue.disabled    = !fcGasEnabled.checked;
+      refreshPreviewIfVisible();
+    }
+
+    fcLiquidEnabled.addEventListener('change', updateFcStates);
+    fcOilEnabled.addEventListener('change', updateFcStates);
+    fcGasEnabled.addEventListener('change', updateFcStates);
+    fcLiquidValue.addEventListener('input', refreshPreviewIfVisible);
+    fcOilValue.addEventListener('input', refreshPreviewIfVisible);
+    fcGasValue.addEventListener('input', refreshPreviewIfVisible);
 
     function buildIXF(){
       const filename=sanitizeFilename(document.getElementById("filename").value);
@@ -503,13 +557,65 @@
         );
       }
 
+      // --- Field Constraints content ---
+      const liquidSelected = fcLiquidEnabled.checked;
+      const oilSelected    = fcOilEnabled.checked;
+      const gasSelected    = fcGasEnabled.checked;
+
+      if(liquidSelected && oilSelected){
+        throw new Error("Select either Liquid or Oil (not both) in Field Constraints.");
+      }
+
+      const constraints = [];
+      function round3(n){ return Math.round(n * 1000) / 1000; }
+
+      if(liquidSelected){
+        const v = parseFloat(fcLiquidValue.value);
+        if(!Number.isFinite(v)) throw new Error("Enter a numeric value for Liquid Rate.");
+        constraints.push(`LIQUID_PRODUCTION_RATE(Group('FM_FIELD')) < ${round3(v)}`);
+      }else if(oilSelected){
+        const v = parseFloat(fcOilValue.value);
+        if(!Number.isFinite(v)) throw new Error("Enter a numeric value for Oil Rate.");
+        constraints.push(`OIL_PRODUCTION_RATE(Group('FM_FIELD')) < ${round3(v)}`);
+      }
+      if(gasSelected){
+        const v = parseFloat(fcGasValue.value);
+        if(!Number.isFinite(v)) throw new Error("Enter a numeric value for Gas Rate.");
+        constraints.push(`GAS_PRODUCTION_RATE(Group('FM_FIELD')) < ${round3(v)}`);
+      }
+
+      // --- Setup strategy header ---
       lines.push(
         "# ---------------------------------------------------------------------------------------------------",
         "#  Setup strategy",
-        "# ---------------------------------------------------------------------------------------------------",
+        "# ---------------------------------------------------------------------------------------------------"
+      );
+
+      // Add GuideRateBalanceAction only if we have constraints
+      const hasConstraints = constraints.length > 0;
+      if(hasConstraints){
+        lines.push(
+          'GuideRateBalanceAction "FM_FIELD_OG_LIMIT" {',
+          "  Constraints = ["
+        );
+        constraints.forEach(c => lines.push(`    "${c}"`));
+        lines.push(
+          "  ]",
+          "}",
+          ""
+        );
+      }
+
+      // CombinedNetworkBalanceAction (conditional AllocationActions)
+      lines.push(
         "# Strategy: applies the instruction to test all the wells and applies the guide rate balance action",
-        'CombinedNetworkBalanceAction "CB_NB" {',
-        '	NetworkBalanceActions=[ NetworkBalanceAction("ACT_NET_BAL") ]    ',
+        'CombinedNetworkBalanceAction "CB_NB" {'
+      );
+      lines.push('	NetworkBalanceActions=[ NetworkBalanceAction("ACT_NET_BAL") ]    ');
+      if(hasConstraints){
+        lines.push('	AllocationActions=[GuideRateBalanceAction("FM_FIELD_OG_LIMIT")]');
+      }
+      lines.push(
         "}",
         "",
         'Strategy "STRATEGY_1" {',
@@ -557,6 +663,7 @@
 
     setAutoMapState(autoMap.checked);
     setMinRateState(minRateEnabledEl.checked);
+    updateFcStates();
   </script>
 </body>
 </html>
